@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>01 · 玻璃棱镜 Glass Prism — 简历罗盘</title>
+<style>
+/* ============ [1] TOKENS ============ */
+:root{
+  --bg:#0A0A0C; --bg-2:#111114; --fg:#FAFAFA; --fg-2:#A1A1AA; --fg-3:#5C5C66;
+  --line:#232329;
+  --brand:#6366F1; --brand-2:#818CF8; --acc:#22D3EE;
+  --r:18px; --r-lg:26px;
+  --font-sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --ease-io:cubic-bezier(.4,0,.2,1);
+  /* 视差深度系数：越小越远 */
+  --d-far:.12; --d-mid:.42; --d-near:1; --d-front:1.28;
+  /* 强调色的透明阶：特性卡与图标共用，随主题自动换色 */
+  --acc-08:color-mix(in srgb,var(--acc) 8%,transparent);
+  --acc-10:color-mix(in srgb,var(--acc) 10%,transparent);
+  --acc-32:color-mix(in srgb,var(--acc) 32%,transparent);
+  --acc-40:color-mix(in srgb,var(--acc) 40%,transparent);
+  /* 卡片表面与投影：暗色默认，亮色主题覆写 */
+  --card-bg:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.014));
+  --card-sh:0 26px 60px rgba(0,0,0,.42);
+}
+/* 亮色主题：整页变量翻转 */
+body[data-tone="light"]{
+  --bg:#FBFAF7; --bg-2:#F2EFE9; --fg:#131315; --fg-2:#55555D; --fg-3:#8B8B94;
+  --line:rgba(19,19,21,.13);
+  --acc-08:color-mix(in srgb,var(--acc) 14%,transparent);
+  --acc-10:color-mix(in srgb,var(--acc) 18%,transparent);
+  --acc-32:color-mix(in srgb,var(--acc) 40%,transparent);
+  --acc-40:color-mix(in srgb,var(--acc) 55%,transparent);
+  --card-bg:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.6));
+  --card-sh:0 22px 48px rgba(19,19,21,.14);
+}
+/* ============ [2] BASE ============ */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{overflow-x:hidden;max-width:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-sans);
+  font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;
+  min-height:100vh}
+img,svg,canvas{display:block;max-width:100%}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+a{color:inherit;text-decoration:none}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--brand-2);outline-offset:3px;border-radius:8px}
+
+/* 舞台：三屏高度，首屏钉住做视差 */
+#stage{position:relative;height:100vh;min-height:560px;overflow:hidden}
+
+/* 视差层容器 —— 所有层都靠 translate3d 位移 */
+.lyr{position:absolute;inset:-8%;will-change:transform;transform:translate3d(0,0,0)}
+.lyr.far{--k:var(--d-far)}
+.lyr.mid{--k:var(--d-mid)}
+.lyr.near{--k:var(--d-near)}
+.lyr.front{--k:var(--d-front)}
+
+/* 视觉主体定位：把近景层的焦点推到 --fx/--fy，避免与文字压在一起 */
+.fpos{position:absolute;left:var(--fx,50%);top:var(--fy,50%);
+  transform:translate(-50%,-50%);will-change:transform}
+.fscale{transform:scale(var(--fs,1));transform-origin:center center;
+  transition:transform .6s var(--ease-io)}
+
+/* 简历纸公共片段：主题若未自行定义，用这份兜底，防止姓名与学校挤成一行 */
+.rp-hd{display:flex;flex-direction:column;gap:3px;padding:22px 24px 14px;
+  border-bottom:1px solid rgba(255,255,255,.12)}
+.rp-hd b{font-size:16px;letter-spacing:-.01em;line-height:1.2}
+.rp-hd span{font-size:11.5px;color:var(--fg-2);line-height:1.3}
+
+/* 首屏内容：单焦点构图 —— 三档布局，文字与视觉主体永不重叠
+   data-layout="center" 文字居中，主体压到下半 / 极角落
+   data-layout="left"   文字靠左，主体占右侧
+   data-layout="right"  文字靠右，主体占左侧                       */
+.core{position:absolute;inset:0;display:flex;z-index:10;
+  padding:118px clamp(26px,6vw,108px) 104px;pointer-events:none}
+.core .inner{pointer-events:auto;max-width:620px}
+
+/* -- center：标题居中偏上，主体让位到下方 -- */
+#stage[data-layout="center"]{--fx:50%;--fy:91%;--fs:.6}
+#stage[data-layout="center"] .core{align-items:center;justify-content:center;text-align:center}
+#stage[data-layout="center"] .core .inner{transform:translateY(-15vh)}
+#stage[data-layout="center"] .sub{margin-left:auto;margin-right:auto}
+#stage[data-layout="center"] .cta{justify-content:center}
+/* 主体在正下方，滚动提示挪到右下角避让 */
+#stage[data-layout="center"] .scue{left:auto;right:clamp(26px,4vw,54px);transform:none}
+
+/* -- left：文字左对齐占左半，主体占右侧 -- */
+#stage[data-layout="left"]{--fx:76%;--fy:50%;--fs:1}
+#stage[data-layout="left"] .core{align-items:center;justify-content:flex-start;text-align:left}
+#stage[data-layout="left"] .core .inner{max-width:clamp(420px,44vw,620px)}
+
+/* -- right：文字右对齐占右半，主体占左侧 -- */
+#stage[data-layout="right"]{--fx:24%;--fy:50%;--fs:1}
+#stage[data-layout="right"] .core{align-items:center;justify-content:flex-end;text-align:right}
+#stage[data-layout="right"] .core .inner{max-width:clamp(420px,44vw,620px)}
+#stage[data-layout="right"] .sub{margin-left:auto}
+#stage[data-layout="right"] .cta{justify-content:flex-end}
+.core .inner{max-width:980px}
+
+/* 顶栏：极简，只有 logo 和 1 个入口 */
+#hud{position:fixed;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;padding:20px 30px;
+  transition:opacity .5s var(--ease-io),transform .5s var(--ease-io)}
+#hud.hide{opacity:0;transform:translateY(-14px);pointer-events:none}
+.logo{display:flex;align-items:center;gap:10px;font-weight:750;font-size:15px;letter-spacing:-.01em}
+.logo .mk{width:24px;height:24px;border-radius:7px;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--brand),var(--acc))}
+.nav-min{margin-left:auto;display:flex;align-items:center;gap:18px;font-size:14px;color:var(--fg-2)}
+.nav-min a{transition:color .3s var(--ease-io)}
+.nav-min a:hover{color:var(--fg)}
+
+/* 标题 */
+h1{margin:0;font-weight:800;letter-spacing:-.035em;line-height:1.08;
+  font-size:clamp(38px,7.4vw,86px);text-wrap:balance}
+.sub{margin:24px auto 0;max-width:600px;font-size:clamp(15px,1.7vw,18.5px);
+  line-height:1.72;color:var(--fg-2);text-wrap:pretty}
+.sub b{color:var(--fg);font-weight:650}
+
+/* CTA：首屏只允许一个主按钮 + 一个文字链 */
+.cta{margin-top:38px;display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  height:54px;padding:0 30px;border-radius:14px;font-size:16px;font-weight:650;
+  position:relative;overflow:hidden;white-space:nowrap;
+  transition:transform .38s var(--ease),box-shadow .38s var(--ease),background .38s var(--ease)}
+.btn-p{background:var(--fg);color:var(--bg);box-shadow:0 10px 34px rgba(0,0,0,.4)}
+.btn-p:hover{transform:translateY(-3px);box-shadow:0 18px 46px rgba(0,0,0,.5)}
+.btn-p:active{transform:translateY(-1px) scale(.985)}
+.btn-p::before{content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;
+  background:radial-gradient(120px 80px at var(--mx,50%) var(--my,50%),rgba(255,255,255,.5),transparent 70%);
+  transition:opacity .38s var(--ease);pointer-events:none}
+.btn-p:hover::before{opacity:.5}
+.tlink{font-size:15px;color:var(--fg-2);display:inline-flex;align-items:center;gap:7px;
+  transition:color .3s var(--ease-io),gap .3s var(--ease)}
+.tlink:hover{color:var(--fg);gap:11px}
+.tlink svg{transition:transform .3s var(--ease)}
+.tlink:hover svg{transform:translateX(3px)}
+
+/* 滚动暗示 */
+.scue{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);
+  z-index:11;display:flex;flex-direction:column;align-items:center;gap:7px;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.24em;color:var(--fg-3);
+  transition:opacity .6s var(--ease-io)}
+.scue.gone{opacity:0}
+.scue .bar{width:1px;height:30px;background:linear-gradient(180deg,var(--fg-3),transparent);
+  position:relative;overflow:hidden}
+.scue .bar::after{content:"";position:absolute;left:0;top:-30px;width:1px;height:30px;
+  background:var(--acc);animation:sc 2s var(--ease-io) infinite}
+@keyframes sc{to{top:30px}}
+
+/* ====== 特性带：首屏之下，用最短路径说清「这网站能干什么」 ====== */
+/* 亮色主题（data-tone="light"）整页变量翻转，特性带与收尾段随之变亮 */
+body[data-tone="light"]{
+  --bg:#FBFAF7; --bg-2:#F3F0EA; --fg:#141416; --fg-2:#57575F; --fg-3:#8E8E97;
+  --line:rgba(20,20,22,.12);
+}
+body[data-tone="light"] #tail{background:var(--bg)}
+body[data-tone="light"] footer{color:var(--fg-3)}
+
+#feats{position:relative;z-index:12;padding:clamp(84px,10vh,120px) 26px clamp(70px,8vh,96px);
+  background:var(--bg)}
+#feats::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--line) 22%,var(--line) 78%,transparent)}
+.fwrap{max-width:1180px;margin:0 auto}
+.fhead{text-align:center;margin-bottom:clamp(42px,5.4vh,64px)}
+.fhead .kick{font-family:var(--font-mono);font-size:11px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--fg-3);display:block;margin-bottom:14px}
+.fhead h2{margin:0 auto;max-width:760px;font-size:clamp(24px,3.3vw,38px);font-weight:800;
+  letter-spacing:-.03em;line-height:1.22;text-wrap:balance}
+.fhead p{margin:14px auto 0;max-width:560px;color:var(--fg-2);font-size:15.5px;line-height:1.7}
+
+.fgrid{display:grid;gap:clamp(16px,1.8vw,22px);
+  grid-template-columns:repeat(auto-fit,minmax(268px,1fr))}
+.fcard{position:relative;border:1px solid var(--line);border-radius:18px;
+  padding:clamp(24px,2.6vw,32px);overflow:hidden;
+  background:var(--card-bg);transition:transform .55s var(--ease),
+  border-color .55s var(--ease),box-shadow .55s var(--ease)}
+.fcard::before{content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;
+  background:radial-gradient(420px 240px at var(--mx,50%) var(--my,0%),var(--acc-08),transparent 72%);
+  transition:opacity .5s var(--ease);pointer-events:none}
+.fcard:hover{transform:translateY(-6px);border-color:var(--acc-40);
+  box-shadow:var(--card-sh)}
+.fcard:hover::before{opacity:1}
+.fcard .fic{width:42px;height:42px;border-radius:12px;display:grid;place-content:center;
+  margin-bottom:18px;color:var(--acc);flex:0 0 auto;
+  border:1px solid var(--acc-32);background:var(--acc-10)}
+.fcard .fic svg{width:21px;height:21px}
+.fcard h3{margin:0 0 9px;font-size:17.5px;font-weight:730;letter-spacing:-.018em;line-height:1.3}
+.fcard p{margin:0;font-size:14.2px;line-height:1.68;color:var(--fg-2)}
+.fcard .fnum{position:absolute;right:20px;top:20px;font-family:var(--font-mono);
+  font-size:11px;letter-spacing:.14em;color:var(--fg-3);opacity:.6}
+
+/* 数据条：四个短指标，一屏内读完 */
+.fbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1px;margin-top:clamp(30px,3.6vh,42px);border:1px solid var(--line);
+  border-radius:15px;overflow:hidden;background:var(--line)}
+.fstat{background:var(--bg);padding:clamp(20px,2.2vw,26px) clamp(16px,2vw,22px);text-align:center}
+.fstat b{display:block;font-size:clamp(22px,2.5vw,29px);font-weight:790;letter-spacing:-.028em;
+  line-height:1.1;font-variant-numeric:tabular-nums}
+.fstat b em{font-style:normal;font-size:.6em;font-weight:650;margin-left:1px;opacity:.72}
+.fstat span{display:block;margin-top:7px;font-size:11.8px;color:var(--fg-3);letter-spacing:.03em}
+
+@media (max-width:720px){
+  .fgrid{grid-template-columns:1fr}
+  .fbar{grid-template-columns:repeat(2,1fr)}
+}
+
+/* 第二屏：极短，只放一句收尾 + 一个 CTA */
+#tail{position:relative;z-index:12;padding:120px 26px 130px;text-align:center;
+  background:var(--bg)}
+#tail h2{margin:0 0 18px;font-size:clamp(26px,3.6vw,42px);font-weight:800;
+  letter-spacing:-.03em;line-height:1.2;text-wrap:balance}
+#tail p{margin:0 auto 34px;max-width:520px;color:var(--fg-2);font-size:16.5px}
+#tail .cta{margin-top:0}
+
+footer{position:relative;z-index:12;padding:30px;text-align:center;font-size:12.5px;
+  color:var(--fg-3);border-top:1px solid var(--line)}
+
+/* 入场：默认淡入上浮，由 .in 触发 */
+.rv{opacity:0;transform:translateY(30px)}
+.rv.in{opacity:1;transform:none;
+  transition:opacity 1s var(--ease),transform 1s var(--ease)}
+
+/* Toast */
+#tst{position:fixed;left:50%;bottom:34px;transform:translate(-50%,18px);z-index:90;
+  background:var(--fg);color:var(--bg);padding:12px 22px;border-radius:12px;
+  font-size:14px;font-weight:650;opacity:0;pointer-events:none;
+  transition:opacity .34s var(--ease-io),transform .34s var(--ease-io);
+  box-shadow:0 20px 50px rgba(0,0,0,.5)}
+#tst.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:860px){
+  /* 窄屏：三档布局统一塌陷为「上文字 / 下主体」，绝不重叠 */
+  #stage[data-layout]{--fx:50%!important;--fy:80%!important;--fs:.52!important;
+    --d-far:.06!important;--d-mid:.2!important;--d-near:.34!important;--d-front:.42!important}
+  #stage{min-height:520px}
+  .core{padding:92px 22px 58px;justify-content:center!important;align-items:flex-start!important;
+    text-align:center!important}
+  .core .inner{transform:none!important;max-width:100%!important;margin:0 auto}
+  .sub{margin-left:auto!important;margin-right:auto!important}
+  .cta{justify-content:center!important}
+  h1{font-size:clamp(30px,8.4vw,44px)}
+  .sub{font-size:15px;margin-top:16px;line-height:1.66}
+  .lyr.near{opacity:.92}
+  .fpos{pointer-events:none}
+  /* 窄屏主体已占底部，滚动提示让位 */
+  .scue{display:none}
+}
+@media (max-width:720px){
+  #hud{padding:16px 18px}
+  .nav-min{gap:14px}
+  .cta{gap:14px;margin-top:26px}
+  .btn{height:50px;padding:0 24px;font-size:15.5px}
+  #stage[data-layout]{--fy:84%!important;--fs:.44!important}
+}
+@media (max-width:400px){
+  .cta .btn{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important}
+  .rv{opacity:1 !important;transform:none !important}
+  .lyr{transform:none !important}
+}
+pre,code{overflow-wrap:anywhere}
+
+/* ============ [3] THEME ============ */
+/* 由各套覆写：质感层样式 */
+
+#stage{background:radial-gradient(ellipse 120% 90% at 50% 42%,#17172B 0%,#0A0A0C 62%)}
+/* 玻璃片 */
+.glass{position:absolute;border-radius:24px;
+  background:linear-gradient(150deg,rgba(255,255,255,.11),rgba(255,255,255,.025) 46%,rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);
+  box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.28);
+  overflow:hidden}
+.glass::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(118deg,transparent 34%,rgba(255,255,255,.2) 48%,transparent 60%);
+  transform:translateX(-130%);animation:sweep 6.5s var(--ease-io) infinite}
+@keyframes sweep{0%,64%{transform:translateX(-130%)}100%{transform:translateX(130%)}}
+/* 主玻璃：简历板 */
+.gA{width:min(392px,60vw);height:min(504px,64vh);left:50%;top:50%;
+  transform:translate(-50%,-50%) rotate(-3.4deg)}
+.gB{width:min(258px,42vw);height:min(332px,42vh);left:50%;top:50%;
+  transform:translate(-50%,-50%) rotate(5.6deg) translate(132px,-34px);
+  background:linear-gradient(150deg,rgba(99,102,241,.34),rgba(34,211,238,.14));
+  border-color:rgba(165,180,252,.34)}
+.rp-hd{display:flex;flex-direction:column;gap:3px;padding:22px 24px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.rp-hd b{font-size:16px;letter-spacing:-.01em}
+.rp-hd span{font-size:11.5px;color:var(--fg-2)}
+.rp-line{height:7px;border-radius:99px;margin:11px 24px;
+  background:linear-gradient(90deg,rgba(255,255,255,.2),rgba(255,255,255,.06))}
+.rp-line.w88{width:88%}.rp-line.w72{width:72%}.rp-line.w94{width:94%}
+.rp-line.w62{width:62%}.rp-line.w80{width:80%}
+/* 命中高亮条 */
+.hitmark{position:absolute;height:9px;border-radius:99px;left:24px;
+  background:linear-gradient(90deg,rgba(52,211,153,.85),rgba(34,211,238,.5));
+  box-shadow:0 0 20px rgba(52,211,153,.6);animation:grow 1.5s var(--ease) .7s both}
+@keyframes grow{from{transform:scaleX(0);transform-origin:left;opacity:0}
+  to{transform:scaleX(1);transform-origin:left;opacity:1}}
+/* 背景浮光 */
+.bokeh{position:absolute;border-radius:50%;filter:blur(66px)}
+.b1{width:520px;height:520px;left:6%;top:2%;background:rgba(99,102,241,.4);animation:dr 24s var(--ease) infinite alternate}
+.b2{width:440px;height:440px;right:4%;bottom:0%;background:rgba(34,211,238,.28);animation:dr 30s var(--ease) infinite alternate-reverse}
+@keyframes dr{to{transform:translate(70px,50px) scale(1.16)}}
+.hl{background:linear-gradient(110deg,var(--brand-2),var(--acc));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+
+/* ============ [4] FOCAL ============ */
+/* 由各套覆写：首屏视觉主体 */
+
+</style>
+</head>
+<body data-tone="dark">
+
+<div id="hud">
+  <div class="logo"><span class="mk"></span>简历罗盘</div>
+  <nav class="nav-min">
+    <a href="#" onclick="toast('原型演示 · 无真实跳转');return false">登录</a>
+  </nav>
+</div>
+
+<section id="stage" data-layout="right">
+  <!-- 远景层 -->
+  <div class="lyr far" data-k=".12"><div class="bokeh b1"></div><div class="bokeh b2"></div></div>
+  <!-- 中景层 -->
+  <div class="lyr mid" data-k=".42"><div class="glass gB"></div></div>
+  <!-- 视觉主体（首屏唯一焦点）—— 位置由 #stage[data-layout] 的 --fx/--fy/--fs 决定 -->
+  <div class="lyr near" data-k="1" data-tilt>
+    <div class="fpos"><div class="fscale">
+<div style="width:min(392px,60vw)">
+  <div data-tilt-inner>
+    <div class="glass gA" style="position:relative;left:auto;top:auto;transform:rotate(-3.4deg)">
+      
+<div class="rpaper ">
+  <div class="rp-hd"><b>张小明</b><span>华东师范大学 · 产品方向</span></div>
+  <div class="rp-line w88"></div>
+  <div class="rp-line w72"></div>
+  <div class="rp-line w94"></div>
+  <div class="rp-line w62"></div>
+  <div class="rp-line w80"></div>
+</div>
+      <i class="hitmark" style="width:52%;top:150px;animation-delay:.85s"></i>
+      <i class="hitmark" style="width:38%;top:203px;animation-delay:1.02s"></i>
+      <i class="hitmark" style="width:44%;top:309px;animation-delay:1.19s"></i>
+    </div>
+  </div>
+</div></div></div>
+  </div>
+  <!-- 前景层 -->
+  <div class="lyr front" data-k="1.28"><div style="position:absolute;inset:0;background:radial-gradient(ellipse 90% 70% at 50% 50%,transparent 42%,rgba(10,10,12,.75) 92%)"></div></div>
+
+  <div class="core">
+    <div class="inner">
+      <h1 class="rv" data-rv="0">你的简历，<br>需要一面<span class="hl">照见岗位</span>的镜子。</h1>
+      <p class="sub rv" data-rv="1">把简历和岗位描述放在一起，<br>30 秒看清<b>差在哪、缺什么、怎么补</b>。</p>
+      <div class="cta rv" data-rv="2">
+        <button class="btn btn-p" onclick="cta()">免费照一次</button>
+        <a class="tlink" href="#tail">看它怎么工作
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="scue" id="scue"><span>SCROLL</span><span class="bar"></span></div>
+</section>
+
+<!-- ====== 特性带：三张能力卡 + 数据条，承接首屏、说清产品价值 ====== -->
+<section id="feats">
+  <div class="fwrap">
+    <div class="fhead">
+      <span class="kick rv" data-rv="0">它能做什么</span>
+      <h2 class="rv" data-rv="1">一面镜子，照出简历与岗位之间的每一处缝隙</h2>
+      <p class="rv" data-rv="2">三个动作构成完整闭环 —— 对齐、改写、保护。</p>
+    </div>
+
+    <div class="fgrid">
+      
+      <article class="fcard rv" data-rv="1">
+        <span class="fnum">01</span>
+        <div class="fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/><path d="M8.5 11h5M11 8.5v5"/></svg></div>
+        <h3>简历 ↔ JD 关键词匹配</h3>
+        <p>把简历和目标岗位描述一起丢进来，30 秒算出匹配度，并标出差在哪几个关键词上。</p>
+      </article>
+      <article class="fcard rv" data-rv="2">
+        <span class="fnum">02</span>
+        <div class="fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11M4 12h7M4 17h9"/><path d="M17.5 14.5l3 3-4.5 1.5 1.5-4.5z"/></svg></div>
+        <h3>逐条改写建议</h3>
+        <p>不是笼统说「写得更具体」，而是指出每一条该怎么改，并给出可以直接替换的写法。</p>
+      </article>
+      <article class="fcard rv" data-rv="3">
+        <span class="fnum">03</span>
+        <div class="fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.4-3 8-7 9-4-1-7-4.6-7-9V6l7-3z"/><path d="M9.2 12.2l2 2 3.6-4"/></svg></div>
+        <h3>简历不进训练集</h3>
+        <p>上传内容仅用于当次诊断，30 天内自动清除，无需注册即可试第一份。</p>
+      </article>
+    </div>
+
+    <div class="fbar rv" data-rv="1">
+      
+      <div class="fstat"><b>30<em>秒</em></b><span>出完整匹配报告</span></div>
+      <div class="fstat"><b>4<em>类</em></b><span>关键词缺口分类</span></div>
+      <div class="fstat"><b>100<em>%</em></b><span>逐条给出改写示例</span></div>
+      <div class="fstat"><b>30<em>天</em></b><span>上传内容自动清除</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="tail">
+  <h2 class="rv" data-rv="0">准备好照一次了吗？</h2>
+  <p class="rv" data-rv="1">不用注册，不用绑卡。上传就能看到结果。</p>
+  <div class="cta rv" data-rv="2">
+    <button class="btn btn-p" onclick="cta()">免费照一次</button>
+  </div>
+</section>
+
+<footer>01 · 玻璃棱镜 ｜ 设计原型，数据为演示态</footer>
+
+<div id="tst" role="status" aria-live="polite"></div>
+
+<script>
+/* ============ [A] ENGINE —— 20 套逐字一致 ============ */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+
+function toast(m){const t=$('#tst');if(!t)return;
+  t.textContent=m;t.classList.add('on');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2000);}
+
+function cta(){toast('原型演示 · 无真实跳转');}
+
+/* ---- 统一 rAF 调度：所有视差写入合并到一帧 ---- */
+const layers=$$('.lyr');
+let ptr={x:0,y:0}, ptrT={x:0,y:0};   // 鼠标视差，带阻尼
+let arc={y:0}, arcT={y:0};           // 滚动视差，带阻尼
+
+function readPointer(e){
+  const w=innerWidth||1, h=innerHeight||1;
+  ptrT.x=(e.clientX/w-.5)*2;   // -1..1
+  ptrT.y=(e.clientY/h-.5)*2;
+}
+function readScroll(){
+  arcT.y=Math.min(scrollY, innerHeight*1.4);
+}
+
+function frame(){
+  /* 阻尼插值 → 惯性感 */
+  ptr.x=lerp(ptr.x,ptrT.x,0.075);
+  ptr.y=lerp(ptr.y,ptrT.y,0.075);
+  arc.y=lerp(arc.y,arcT.y,0.1);
+
+  const vh=innerHeight||1;
+  const p=clamp(arc.y/vh);          // 0..1 首屏离开进度
+
+  for(let i=0;i<layers.length;i++){
+    const el=layers[i];
+    const k=parseFloat(el.dataset.k||el.style.getPropertyValue('--k'))||1;
+    /* 滚动位移：层越近走得越远；同时整体上移制造"穿过"感 */
+    const sy=-arc.y*k*0.62;
+    /* 鼠标位移：按深度反向，近层动得多 */
+    const mx=ptr.x*26*k, my=ptr.y*18*k;
+    /* 首屏淡出 + 轻微缩放，避免离开时僵硬 */
+    const scale=1+k*0.022*p;
+    el.style.transform=`translate3d(${mx.toFixed(2)}px,${(sy+my).toFixed(2)}px,0) scale(${scale.toFixed(4)})`;
+    el.style.opacity = (1-clamp(p*1.22)*.85).toFixed(3);
+  }
+
+  /* HUD 与滚动暗示随首屏离场淡出 */
+  const hud=$('#hud'); if(hud) hud.classList.toggle('hide',scrollY>90);
+  const sc=$('#scue'); if(sc) sc.classList.toggle('gone',scrollY>50);
+
+  requestAnimationFrame(frame);
+}
+
+/* ---- 入场：按 data-rv 顺序错开 ---- */
+function entrance(){
+  const els=$$('.rv');
+  if(!('IntersectionObserver' in window)||RM){els.forEach(e=>e.classList.add('in'));return;}
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(!e.isIntersecting)return;
+      const d=parseInt(e.target.dataset.rv||0,10);
+      setTimeout(()=>e.target.classList.add('in'),d*130);
+      io.unobserve(e.target);
+    });
+  },{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+  els.forEach(e=>io.observe(e));
+}
+
+/* ---- 主体 3D 倾斜（仅 [data-tilt]） ---- */
+function tilt(){
+  if(RM)return;
+  $$('[data-tilt]').forEach(el=>{
+    const t=el.querySelector('[data-tilt-inner]')||el.firstElementChild;
+    if(!t)return;
+    t.style.transformStyle='preserve-3d';
+    t.style.transition='transform .5s cubic-bezier(.16,1,.3,1)';
+    el.addEventListener('pointermove',e=>{
+      const r=el.getBoundingClientRect();
+      const nx=(e.clientX-r.left)/r.width-.5;
+      const ny=(e.clientY-r.top)/r.height-.5;
+      t.style.transform=`rotateY(${nx*13}deg) rotateX(${-ny*13}deg)`;
+    });
+    el.addEventListener('pointerleave',()=>{t.style.transform='';});
+  });
+}
+
+/* ---- 按钮光晕跟随 ---- */
+function btnGlow(){
+  if(RM)return;
+  const bind=(sel,key)=>{
+    $$(sel).forEach(b=>b.addEventListener('pointermove',e=>{
+      const r=b.getBoundingClientRect();
+      b.style.setProperty('--mx',(e.clientX-r.left)/r.width*100+'%');
+      b.style.setProperty('--my',(e.clientY-r.top)/r.height*100+'%');
+    }));
+  };
+  bind('.btn-p');
+  /* 特性卡：光标跟随的柔光，与主按钮同一套变量 */
+  bind('.fcard');
+}
+
+/* ---- 启动 ---- */
+document.addEventListener('DOMContentLoaded',()=>{
+  entrance(); tilt(); btnGlow();
+  addEventListener('pointermove',readPointer,{passive:true});
+  addEventListener('scroll',readScroll,{passive:true});
+  addEventListener('resize',readScroll);
+  readScroll();
+  if(!RM) requestAnimationFrame(frame);
+  else layers.forEach((el,i)=>{ el.style.transform='none'; });
+});
+</script>
+</body>
+</html>

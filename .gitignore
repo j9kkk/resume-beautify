@@ -1,0 +1,28 @@
+# ===== 构建产物 / 依赖 =====
+node_modules/
+dist/
+build/
+*.log
+
+# ===== 编辑器 / 系统 =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ===== 环境与密钥（严禁入库）=====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# ===== Docker =====
+.dockerignore
+
+# ===== 本地临时 =====
+*.zip
+*.tmp
+.cache/

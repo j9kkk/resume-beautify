@@ -1,0 +1,31 @@
+# ============================================================
+# 简历罗盘 · 静态原型站点
+# 用法：
+#   docker compose up -d --build      启动（后台）
+#   docker compose logs -f            查看日志
+#   docker compose down               停止并移除容器
+# 访问：http://localhost:7999
+# ============================================================
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: resume-beautify:latest
+    container_name: resume-beautify
+    restart: unless-stopped
+    ports:
+      - "7999:7999"
+    environment:
+      - TZ=Asia/Shanghai
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:7999/"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

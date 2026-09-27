@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>简历罗盘 · 落地页原型 20 套</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:#08080B;color:#EDEDF2;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1560px;margin:0 auto;padding:0 clamp(18px,4vw,54px) 120px}
+
+header{padding:clamp(54px,8vw,104px) 0 46px;position:relative;overflow:hidden}
+header::before{
+  content:"";position:absolute;left:-12%;top:-70%;width:620px;height:620px;border-radius:50%;
+  background:radial-gradient(circle,rgba(99,102,241,.3),transparent 66%);filter:blur(70px)
+}
+header::after{
+  content:"";position:absolute;right:-8%;top:-40%;width:520px;height:520px;border-radius:50%;
+  background:radial-gradient(circle,rgba(34,211,238,.2),transparent 66%);filter:blur(70px)
+}
+.tag{
+  position:relative;display:inline-flex;align-items:center;gap:9px;
+  font-size:12px;letter-spacing:.13em;text-transform:uppercase;
+  color:#9CA3AF;border:1px solid rgba(255,255,255,.13);
+  padding:8px 15px;border-radius:99px;background:rgba(255,255,255,.03)
+}
+.tag i{width:6px;height:6px;border-radius:50%;background:#34D399;
+  box-shadow:0 0 0 3px rgba(52,211,153,.2);animation:pl 2s infinite}
+@keyframes pl{50%{opacity:.35}}
+h1{
+  position:relative;margin:24px 0 16px;
+  font-size:clamp(34px,5.4vw,66px);font-weight:820;letter-spacing:-.035em;line-height:1.06;
+}
+h1 span{
+  background:linear-gradient(100deg,#818CF8,#22D3EE 55%,#A78BFA);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent
+}
+header p{
+  position:relative;margin:0;max-width:720px;font-size:clamp(14.5px,1.5vw,17.5px);
+  line-height:1.75;color:#9CA3AF
+}
+header p b{color:#E5E7EB;font-weight:650}
+.stats{position:relative;display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.stat{
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);
+  border-radius:13px;padding:13px 19px;min-width:132px
+}
+.stat b{display:block;font-size:24px;font-weight:780;letter-spacing:-.02em}
+.stat span{font-size:11.5px;color:#8B8B96;letter-spacing:.04em}
+
+.grid{
+  display:grid;gap:clamp(20px,2.4vw,34px);
+  grid-template-columns:repeat(auto-fill,minmax(360px,1fr))
+}
+.card{
+  border:1px solid rgba(255,255,255,.09);border-radius:19px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+  transition:transform .5s cubic-bezier(.16,1,.3,1),border-color .5s,box-shadow .5s;
+  position:relative
+}
+.card::before{
+  content:"";position:absolute;inset:0;border-radius:19px;pointer-events:none;opacity:0;
+  background:linear-gradient(130deg,var(--c1),var(--c2));
+  -webkit-mask:linear-gradient(#000,#000) content-box,linear-gradient(#000,#000);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:1px;
+  transition:opacity .5s
+}
+.card:hover{transform:translateY(-7px);box-shadow:0 30px 70px rgba(0,0,0,.55)}
+.card:hover::before{opacity:1}
+
+.thumb{position:relative;aspect-ratio:16/10;overflow:hidden;background:#0C0C10;
+  border-bottom:1px solid rgba(255,255,255,.07)}
+.thumb iframe{
+  position:absolute;left:0;top:0;width:200%;height:200%;
+  border:0;transform:scale(.5);transform-origin:0 0;pointer-events:none
+}
+.veil{position:absolute;inset:0;background:linear-gradient(180deg,transparent 46%,rgba(8,8,11,.72));
+  transition:opacity .45s}
+.go{position:absolute;inset:auto 0 0 0;padding:14px 18px;display:flex;justify-content:flex-end;
+  opacity:0;transform:translateY(9px);transition:opacity .4s,transform .4s}
+.card:hover .go{opacity:1;transform:none}
+.go a{
+  font-size:12.5px;font-weight:650;text-decoration:none;color:#0A0A0C;
+  background:#EDEDF2;padding:8px 15px;border-radius:9px
+}
+
+.meta{padding:17px 19px 20px}
+.row1{display:flex;align-items:center;gap:11px}
+.no{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+  color:#0A0A0C;background:linear-gradient(135deg,var(--c1),var(--c2));
+  width:26px;height:26px;border-radius:8px;display:grid;place-content:center;
+  font-weight:700;flex:0 0 auto
+}
+.row1 h3{margin:0;font-size:16.5px;font-weight:720;letter-spacing:-.015em;
+  display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.row1 h3 em{font-style:normal;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:#6B7280;font-weight:600}
+.lay{margin-left:auto;font-size:10.5px;color:#9CA3AF;white-space:nowrap;
+  border:1px solid rgba(255,255,255,.11);padding:4px 9px;border-radius:99px}
+.desc{margin:11px 0 0;font-size:13px;line-height:1.62;color:#8B8B96}
+.h1t{margin:9px 0 0;font-size:12.5px;line-height:1.55;color:#636B7A;
+  padding-top:9px;border-top:1px solid rgba(255,255,255,.06)}
+
+footer{margin-top:74px;padding-top:30px;border-top:1px solid rgba(255,255,255,.08);
+  font-size:12.5px;color:#5B5B66;line-height:1.8}
+
+@media (max-width:560px){
+  .grid{grid-template-columns:1fr}
+  .thumb{aspect-ratio:4/3}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="tag"><i></i>Landing Page Prototypes · 视差版</span>
+  <h1>20 套海报落地页<br><span>同一句话，二十种抓住你的方式</span></h1>
+  <p>
+    每套结构一致：<b>首屏海报</b>（一个视觉主体、一句主张、两个动作）→
+    <b>特性带</b>（三张能力卡 + 一条四格数据条）→ <b>收尾行动</b>。
+    首屏保持极简、靠 <b>translate3d + rAF 阻尼</b> 做视差抓注意力；
+    往下滚一屏就能看清产品到底能干什么。悬停卡片可直接在缩略图里试手感。
+  </p>
+  <div class="stats">
+    <div class="stat"><b>20</b><span>套独立视觉语言</span></div>
+    <div class="stat"><b>3 + 4</b><span>能力卡 + 数据指标</span></div>
+    <div class="stat"><b>4 / 16</b><span>亮色 / 暗色主题</span></div>
+    <div class="stat"><b>40 / 40</b><span>桌面+移动 全通过</span></div>
+    <div class="stat"><b>0</b><span>运行时错误</span></div>
+  </div>
+</header>
+
+<div class="grid">
+  <article class="card" style="--c1:#6366F1;--c2:#22D3EE">
+    <div class="thumb">
+      <iframe src="01-glass-prism.html" loading="lazy" title="玻璃棱镜"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="01-glass-prism.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">01</span>
+        <h3>玻璃棱镜<em>Glass Prism</em></h3>
+        <span class="lay">文字右 · 主体左</span>
+      </div>
+      <p class="desc">多层磨砂玻璃错位叠放，冷色折射光斑</p>
+      <p class="h1t">「你的简历，需要一面照见岗位的镜子。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#F59E0B;--c2:#78716C">
+    <div class="thumb">
+      <iframe src="02-film-grain.html" loading="lazy" title="噪点胶片"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="02-film-grain.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">02</span>
+        <h3>噪点胶片<em>Film Grain</em></h3>
+        <span class="lay">文字左 · 主体右</span>
+      </div>
+      <p class="desc">SVG 噪点铺满全屏，像一格未冲洗的底片</p>
+      <p class="h1t">「简历不该靠运气被选中。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#38BDF8;--c2:#0EA5E9">
+    <div class="thumb">
+      <iframe src="03-blueprint-grid.html" loading="lazy" title="网格蓝图"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="03-blueprint-grid.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">03</span>
+        <h3>网格蓝图<em>Blueprint Grid</em></h3>
+        <span class="lay">居中 · 主体下沉</span>
+      </div>
+      <p class="desc">工程制图网格 + 坐标刻度，把简历当项目做</p>
+      <p class="h1t">「把简历当成一份可测量的工程。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#94A3B8;--c2:#E2E8F0">
+    <div class="thumb">
+      <iframe src="04-liquid-chrome.html" loading="lazy" title="液态金属"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="04-liquid-chrome.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">04</span>
+        <h3>液态金属<em>Liquid Chrome</em></h3>
+        <span class="lay">文字右 · 主体左</span>
+      </div>
+      <p class="desc">铬合金球体高光流动，反光随鼠标游走</p>
+      <p class="h1t">「让简历流动到对的位置。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#DC2626;--c2:#111827">
+    <div class="thumb">
+      <iframe src="05-paper-minimal.html" loading="lazy" title="极简纸感"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="05-paper-minimal.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">05</span>
+        <h3>极简纸感<em>Paper Minimal</em></h3>
+        <span class="lay">文字左 · 主体右</span>
+      </div>
+      <p class="desc">纯白纸面 + 一道红笔批注，克制到只剩必要</p>
+      <p class="h1t">「一页纸，说清你凭什么。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#A78BFA;--c2:#60A5FA">
+    <div class="thumb">
+      <iframe src="06-liquid-glass.html" loading="lazy" title="液态玻璃卡"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="06-liquid-glass.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">06</span>
+        <h3>液态玻璃卡<em>Liquid Glass</em></h3>
+        <span class="lay">文字右 · 主体左</span>
+      </div>
+      <p class="desc">iOS 风玻璃卡片，背光透出底色</p>
+      <p class="h1t">「简历与岗位之间，只差一次对齐。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#F0ABFC;--c2:#67E8F9">
+    <div class="thumb">
+      <iframe src="07-holographic.html" loading="lazy" title="全息棱镜"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="07-holographic.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">07</span>
+        <h3>全息棱镜<em>Holographic</em></h3>
+        <span class="lay">文字左 · 主体右</span>
+      </div>
+      <p class="desc">虹彩渐变随视角偏移，像防伪镭射标</p>
+      <p class="h1t">「同一份简历，角度不同，看到的不同。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#9CA3AF;--c2:#FCD34D">
+    <div class="thumb">
+      <iframe src="08-brushed-metal.html" loading="lazy" title="金属拉丝"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="08-brushed-metal.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">08</span>
+        <h3>金属拉丝<em>Brushed Metal</em></h3>
+        <span class="lay">居中 · 主体下沉</span>
+      </div>
+      <p class="desc">阳极氧化铝面板 + 蚀刻铭牌</p>
+      <p class="h1t">「把模糊的"还不错"换成具体的数字。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#34D399;--c2:#818CF8">
+    <div class="thumb">
+      <iframe src="09-aurora-minimal.html" loading="lazy" title="光晕极简"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="09-aurora-minimal.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">09</span>
+        <h3>光晕极简<em>Aurora Minimal</em></h3>
+        <span class="lay">文字左 · 主体右</span>
+      </div>
+      <p class="desc">极光晕染背景，一个分数环悬在右侧</p>
+      <p class="h1t">「别让好简历死在关键词不匹配上。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#C084FC;--c2:#38BDF8">
+    <div class="thumb">
+      <iframe src="10-particle-dust.html" loading="lazy" title="粒子星尘"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="10-particle-dust.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">10</span>
+        <h3>粒子星尘<em>Particle Dust</em></h3>
+        <span class="lay">文字右 · 主体左</span>
+      </div>
+      <p class="desc">细密粒子在深空漂浮，缓慢聚散</p>
+      <p class="h1t">「每一个关键词，都是一次被看见的机会。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#EF4444;--c2:#F97316">
+    <div class="thumb">
+      <iframe src="11-darkroom.html" loading="lazy" title="暗房显影"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="11-darkroom.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">11</span>
+        <h3>暗房显影<em>Darkroom</em></h3>
+        <span class="lay">文字左 · 主体右</span>
+      </div>
+      <p class="desc">红色安全灯下，相纸上的字逐渐显影</p>
+      <p class="h1t">「你缺的不是能力，是显影。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#22C55E;--c2:#16A34A">
+    <div class="thumb">
+      <iframe src="12-terminal.html" loading="lazy" title="终端命令行"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="12-terminal.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">12</span>
+        <h3>终端命令行<em>Terminal</em></h3>
+        <span class="lay">文字右 · 主体左</span>
+      </div>
+      <p class="desc">等宽字体 + 光标闪烁，匹配结果逐行打印</p>
+      <p class="h1t">「让机器读懂你的简历。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#1F2937;--c2:#B45309">
+    <div class="thumb">
+      <iframe src="13-editorial-spread.html" loading="lazy" title="杂志跨页"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="13-editorial-spread.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">13</span>
+        <h3>杂志跨页<em>Editorial Spread</em></h3>
+        <span class="lay">文字左 · 主体右</span>
+      </div>
+      <p class="desc">衬线大标题 + 分栏正文，纸媒气质</p>
+      <p class="h1t">「你的简历值得被认真读一遍。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#F472B6;--c2:#A855F7">
+    <div class="thumb">
+      <iframe src="14-waveform.html" loading="lazy" title="音频波形"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="14-waveform.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">14</span>
+        <h3>音频波形<em>Waveform</em></h3>
+        <span class="lay">文字右 · 主体左</span>
+      </div>
+      <p class="desc">章节被画成声波，播放头扫过逐条点亮</p>
+      <p class="h1t">「简历的节奏也很重要。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#FACC15;--c2:#000000">
+    <div class="thumb">
+      <iframe src="15-brutalist.html" loading="lazy" title="直角网格"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="15-brutalist.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">15</span>
+        <h3>直角网格<em>Brutalist</em></h3>
+        <span class="lay">文字左 · 主体右</span>
+      </div>
+      <p class="desc">粗黑描边、纯色块、零圆角，态度强硬</p>
+      <p class="h1t">「别修饰。直接给分数。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#2563EB;--c2:#F43F5E">
+    <div class="thumb">
+      <iframe src="16-duotone.html" loading="lazy" title="双色玻璃"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="16-duotone.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">16</span>
+        <h3>双色玻璃<em>Duotone</em></h3>
+        <span class="lay">文字右 · 主体左</span>
+      </div>
+      <p class="desc">只有两种颜色，撞色分割整屏</p>
+      <p class="h1t">「你写的，和他想看的，差多远？」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#D97706;--c2:#7C2D12">
+    <div class="thumb">
+      <iframe src="17-torn-paper.html" loading="lazy" title="撕纸拼贴"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="17-torn-paper.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">17</span>
+        <h3>撕纸拼贴<em>Torn Paper</em></h3>
+        <span class="lay">文字左 · 主体右</span>
+      </div>
+      <p class="desc">边缘毛糙的纸片叠贴，手作感</p>
+      <p class="h1t">「把简历拆开，再拼回对的样子。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#6366F1;--c2:#EC4899">
+    <div class="thumb">
+      <iframe src="18-layers3d.html" loading="lazy" title="3D 分层卡"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="18-layers3d.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">18</span>
+        <h3>3D 分层卡<em>Layers 3D</em></h3>
+        <span class="lay">居中 · 主体下沉</span>
+      </div>
+      <p class="desc">卡片在 Z 轴上叠了五层，透视错开</p>
+      <p class="h1t">「简历是一层层堆出来的。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#0F172A;--c2:#3B82F6">
+    <div class="thumb">
+      <iframe src="19-line-art.html" loading="lazy" title="描边线稿"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="19-line-art.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">19</span>
+        <h3>描边线稿<em>Line Art</em></h3>
+        <span class="lay">文字右 · 主体左</span>
+      </div>
+      <p class="desc">只有线，没有面；像一张技术插画</p>
+      <p class="h1t">「一条一条，把缺口画出来。」</p>
+    </div>
+  </article>
+  <article class="card" style="--c1:#8B5CF6;--c2:#06B6D4">
+    <div class="thumb">
+      <iframe src="20-color-sweep.html" loading="lazy" title="色带扫过"></iframe>
+      <div class="veil"></div>
+      <div class="go"><a href="20-color-sweep.html" target="_blank">全屏打开 ↗</a></div>
+    </div>
+    <div class="meta">
+      <div class="row1">
+        <span class="no">20</span>
+        <h3>色带扫过<em>Color Sweep</em></h3>
+        <span class="lay">文字左 · 主体右</span>
+      </div>
+      <p class="desc">高饱和色带匀速横扫，把视线推着走</p>
+      <p class="h1t">「扫一眼，就知道该改哪里。」</p>
+    </div>
+  </article>
+</div>
+
+<footer>
+  简历罗盘 · 落地页原型库 v2 &nbsp;|&nbsp; 全部为静态 HTML，双击即可在浏览器打开<br>
+  视差引擎：pointermove → 归一化 −1..1，scrollY → clamp 到 vh×1.4，两路合并进同一个 requestAnimationFrame 循环，lerp 阻尼 0.075
+</footer>
+
+</div>
+</body>
+</html>

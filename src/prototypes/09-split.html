@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>09 · 分屏对照 Split — AI 简历润色</title>
+<style>
+/* ============ [1] TOKENS ============ */
+:root{
+  --bg:#FAFAF9; --panel:#FFFFFF; --fg:#1C1917; --fg-2:#57534E; --fg-3:#A8A29E;
+  --line:#E7E5E4; --line-2:#D6D3D1;
+  --left:#E0F2FE; --left-line:#7DD3FC; --left-ink:#0369A1;
+  --right:#FEF3C7; --right-line:#FCD34D; --right-ink:#B45309;
+  --brand:#1C1917; --brand-soft:#F5F5F4; --ok:#15803D; --warn:#B45309; --bad:#DC2626;
+  --hit:#15803D; --hit-bg:#DCFCE7; --miss:#DC2626; --miss-bg:#FEE2E2;
+  --radius:4px; --radius-sm:3px;
+  --shadow:none; --shadow-lg:0 8px 24px rgba(28,25,23,.08);
+  --font-sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --dur:.24s; --ease:cubic-bezier(.32,.72,0,1);
+  --maxw:1140px;
+  --split:50%;
+}
+/* ============ [2] BASE ============ */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-sans);
+  font-size:15px;line-height:1.72;-webkit-font-smoothing:antialiased}
+img,svg{display:block;max-width:100%}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,textarea{font:inherit;color:inherit}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--fg-2)}
+.tiny{font-size:13px;color:var(--fg-2)}
+h1,h2,h3{margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+h1{font-size:clamp(28px,5vw,42px)}
+h2{font-size:clamp(20px,3.2vw,25px);margin-bottom:6px}
+h3{font-size:17px;font-weight:700;margin-bottom:4px}
+p{margin:0 0 12px}
+a{color:var(--brand);text-decoration:none;border-bottom:1px solid transparent;transition:border-color var(--dur)}
+a:hover{border-bottom-color:var(--brand)}
+
+/* 顶部细进度线 */
+#topbar{position:fixed;top:0;left:0;right:0;height:2px;z-index:60;background:transparent}
+#topbar i{display:block;height:100%;width:0;background:var(--brand);transition:width .1s linear}
+
+/* 章节 */
+section{padding:64px 0;border-top:1px solid var(--line);position:relative;background:var(--panel)}
+section:first-of-type{border-top:0}
+.sec-no{font-family:var(--font-mono);font-size:11px;color:var(--fg-3);letter-spacing:.16em;margin-bottom:12px;
+  display:inline-flex;align-items:center;gap:8px}
+.sec-no::after{content:"";flex:1;height:1px;background:var(--line);min-width:40px}
+.sec-head{margin-bottom:26px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.sec-head .muted{font-size:15px;margin:6px 0 0}
+
+/* 按钮 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 24px;
+  border-radius:var(--radius);font-size:15px;font-weight:600;position:relative;
+  transition:transform var(--dur) var(--ease),box-shadow var(--dur),background var(--dur),color var(--dur)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--fg);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(17,24,39,.16)}
+.btn-primary[disabled]{background:var(--fg-3);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-line{border:1px solid var(--line);background:var(--bg)}
+.btn-line:hover{border-color:var(--fg);transform:translateY(-1px)}
+.btn-blue{background:var(--brand);color:#fff}
+.btn-blue:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(37,99,235,.22)}
+.btn-sm{height:38px;padding:0 16px;font-size:14px}
+.btn .arw{transition:transform var(--dur)}
+.btn:hover .arw{transform:translateX(3px)}
+
+/* 卡片 */
+.card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+.card-soft{background:var(--bg-2);border-color:transparent}
+
+/* 输入 */
+.field{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;background:var(--bg);
+  transition:border-color var(--dur),box-shadow var(--dur);outline:none;font-size:15px}
+.field:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.field.err{border-color:var(--bad);box-shadow:0 0 0 3px #FEF2F2}
+.tip{font-size:13px;color:var(--fg-3);margin-top:6px;min-height:18px;transition:color var(--dur)}
+.tip.bad{color:var(--bad)}
+
+/* 复选框 */
+.cb{display:flex;gap:11px;align-items:flex-start;cursor:pointer;font-size:14px;color:var(--fg-2);line-height:1.6}
+.cb input{position:absolute;opacity:0;pointer-events:none}
+.cb .box{flex:0 0 20px;width:20px;height:20px;border:1.5px solid #D1D5DB;border-radius:var(--radius-sm);
+  margin-top:2px;position:relative;transition:background var(--dur),border-color var(--dur),transform var(--dur)}
+.cb .box::after{content:"";position:absolute;left:5px;top:1.5px;width:6px;height:10px;
+  border:2px solid #fff;border-top:0;border-left:0;transform:rotate(45deg) scale(0);transition:transform .22s var(--ease) .06s}
+.cb input:checked+.box{background:var(--fg);border-color:var(--fg)}
+.cb input:checked+.box::after{transform:rotate(45deg) scale(1)}
+.cb input:focus-visible+.box{box-shadow:0 0 0 3px var(--brand-soft)}
+
+/* chip */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:999px;font-size:13px;
+  border:1px solid var(--line);background:var(--bg);transition:all .28s var(--ease);white-space:nowrap}
+.chip.hit{border-color:#BBF7D0;background:#F0FDF4;color:#047857;font-weight:600}
+.chip.miss{border-color:#FECACA;background:#FEF2F2;color:var(--bad);font-weight:600}
+.chip.lit{animation:pop .34s var(--ease) both}
+@keyframes pop{0%{transform:scale(.86);opacity:0}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+
+/* 骨架 */
+.sk{background:linear-gradient(90deg,#F3F4F6 25%,#E9EBEF 37%,#F3F4F6 63%);
+  background-size:400% 100%;animation:shim 1.25s ease-in-out infinite;border-radius:var(--radius-sm);height:13px}
+@keyframes shim{0%{background-position:100% 0}100%{background-position:0 0}}
+
+/* 抖动 */
+.shake{animation:shake .45s var(--ease)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+
+/* 入场 */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+
+/* 分数环 */
+.ring{position:relative;width:150px;height:150px;flex:0 0 auto}
+.ring svg{transform:rotate(-90deg)}
+.ring .track{stroke:#F1F2F4}
+.ring .bar{stroke:var(--brand);stroke-linecap:round;transition:stroke-dashoffset 1.2s var(--ease),stroke .5s}
+.ring .val{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring .val b{font-size:40px;font-family:var(--font-mono);font-weight:700;line-height:1;letter-spacing:-.03em}
+.ring .val span{display:block;font-size:12px;color:var(--fg-3);margin-top:5px;letter-spacing:.08em}
+
+/* 步骤 tab（下划线式） */
+.tabs{display:flex;gap:26px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:11px 0;font-size:14px;color:var(--fg-3);position:relative;white-space:nowrap;transition:color var(--dur)}
+.tab::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--fg);
+  transform:scaleX(0);transform-origin:left;transition:transform .34s var(--ease)}
+.tab.on{color:var(--fg);font-weight:700}
+.tab.on::after{transform:scaleX(1)}
+.tab.done{color:var(--fg-2)}
+.tab.done::after{transform:scaleX(1);background:var(--line)}
+
+/* 状态：默认隐藏，加 .on 显示 */
+.st{display:none}
+.st.on{display:block;animation:fadeUp .42s var(--ease) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* 拖拽区 */
+.drop{border:1.5px dashed #D1D5DB;border-radius:var(--radius);padding:52px 24px;text-align:center;
+  background:var(--bg-2);transition:all var(--dur) var(--ease);cursor:pointer}
+.drop:hover{border-color:var(--fg-3);background:#F5F6F7}
+.drop.over{border-color:var(--brand);background:var(--brand-soft);transform:scale(1.012)}
+.drop.over .drop-ico{transform:scale(1.12) translateY(-2px)}
+.drop-ico{transition:transform var(--dur) var(--ease);margin:0 auto 14px}
+
+/* 列表 */
+.li{display:flex;gap:14px;padding:17px 0;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}
+.li .n{font-family:var(--font-mono);font-size:12px;color:var(--fg-3);flex:0 0 22px;padding-top:3px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 9px;border-radius:5px;font-weight:600}
+.badge.hi{background:#FEF2F2;color:var(--bad)}
+.badge.md{background:#FFFBEB;color:var(--warn)}
+.badge.lo{background:#F0FDF4;color:var(--ok)}
+
+/* 对照 */
+.diff{font-size:14px;line-height:1.85}
+.diff del{color:var(--fg-3);background:#FAFAFA;padding:1px 3px;border-radius:3px}
+.diff ins{color:#047857;background:#F0FDF4;padding:1px 3px;border-radius:3px;text-decoration:none;font-weight:600}
+.swipe{position:relative;display:inline-block}
+.swipe::before{content:"";position:absolute;inset:0;background:#FEF3C7;transform-origin:left;
+  animation:sweep .62s var(--ease) both;z-index:-1;border-radius:3px}
+@keyframes sweep{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+/* 付费墙 */
+.lock{position:relative;overflow:hidden;border-radius:var(--radius)}
+.lock .blur{filter:blur(6px);opacity:.5;user-select:none;pointer-events:none}
+.lock .veil{position:absolute;inset:0;display:grid;place-content:center;text-align:center;
+  background:linear-gradient(180deg,rgba(255,255,255,.65),rgba(255,255,255,.97) 62%)}
+.lock.open .blur{filter:none;opacity:1;pointer-events:auto;animation:unveil .7s var(--ease)}
+@keyframes unveil{from{filter:blur(6px);opacity:.4}to{filter:none;opacity:1}}
+.lock.open .veil{opacity:0;pointer-events:none;transition:opacity .45s}
+.sku{border:1px solid var(--line);border-radius:var(--radius);padding:22px;position:relative;transition:all var(--dur) var(--ease);cursor:pointer}
+.sku:hover{border-color:var(--fg-3);transform:translateY(-2px);box-shadow:0 10px 30px rgba(17,24,39,.07)}
+.sku.best{border-color:var(--fg);border-width:1.5px}
+.sku .flag{position:absolute;top:-1px;right:-1px;background:var(--fg);color:#fff;font-size:11px;font-weight:700;
+  padding:4px 10px;border-radius:0 var(--radius) 0 var(--radius);letter-spacing:.04em}
+.sku .price{font-family:var(--font-mono);font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.sku .price em{font-size:14px;font-style:normal;font-weight:500;color:var(--fg-3)}
+
+/* 支付 */
+.paybox{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+.qr{width:132px;height:132px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:9px;position:relative}
+.qr .scan{position:absolute;left:9px;right:9px;height:2px;background:var(--brand);border-radius:2px;
+  animation:scan 2.1s var(--ease) infinite;box-shadow:0 0 8px var(--brand)}
+@keyframes scan{0%{top:9px;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:calc(100% - 11px);opacity:0}}
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;
+  animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pulse::after{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid var(--brand);
+  animation:pulse 2.4s var(--ease) infinite;pointer-events:none}
+@keyframes pulse{0%{opacity:.5;transform:scale(1)}100%{opacity:0;transform:scale(1.035)}}
+
+/* 版本卡 */
+.ver{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 17px;
+  border:1px solid var(--line);border-radius:var(--radius);transition:all var(--dur) var(--ease)}
+.ver:hover{border-color:var(--fg-3);transform:translateX(3px)}
+.ver+.ver{margin-top:9px}
+
+/* 倒计时条 */
+.cd{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--warn);background:#FFFBEB;
+  border-radius:var(--radius-sm);padding:9px 13px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--warn);animation:blink 1.5s var(--ease) infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* 彩带 */
+.cf{position:fixed;inset:0;pointer-events:none;z-index:80;overflow:hidden}
+.cf i{position:absolute;top:-12px;width:7px;height:12px;border-radius:1px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(560deg);opacity:0}}
+
+/* 底栏 */
+footer{padding:52px 0;border-top:1px solid var(--line);font-size:13px;color:var(--fg-3)}
+
+
+/* ============ [3b] SPLIT 专属 ============ */
+body.dragging{user-select:none;cursor:col-resize}
+body.dragging *{cursor:col-resize !important}
+/* 分屏舞台 */
+.split{position:relative;display:grid;grid-template-columns:var(--split) 1fr;
+  border:1px solid var(--line-2);border-radius:var(--radius);overflow:hidden;background:var(--panel);
+  min-height:400px}
+.pane{overflow:hidden;position:relative;transition:background var(--dur) linear}
+.pane-l{background:var(--left);border-right:1px solid var(--line-2)}
+.pane-r{background:var(--right)}
+.pane-in{padding:20px}
+/* 分屏是"视窗剪切"而不是"内容重排"：两栏内容各自按整幅宽度排版，
+   拖拽分割柄只改变哪一部分被露出，因此不会出现文字被压扁的情况。 */
+.split .pane-in{width:calc(100vw - 48px);max-width:1092px}
+
+/* 分屏标签 */
+.pane-tag{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:7px;
+  padding:9px 14px;font-size:12px;font-weight:700;letter-spacing:.04em;
+  background:rgba(255,255,255,.82);backdrop-filter:blur(6px);border-bottom:1px solid rgba(0,0,0,.06)}
+.pane-l .pane-tag{color:var(--left-ink)}
+.pane-r .pane-tag{color:var(--right-ink)}
+.pane-tag .sw{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+.pane-l .pane-tag .sw{background:var(--left-line)}
+.pane-r .pane-tag .sw{background:var(--right-line)}
+.pane-tag .cnt{margin-left:auto;font-family:var(--font-mono);font-weight:500;color:var(--fg-2)}
+
+/* 分割柄 */
+.divider{position:absolute;top:0;bottom:0;left:var(--split);width:14px;margin-left:-7px;z-index:6;
+  cursor:col-resize;display:flex;align-items:center;justify-content:center;touch-action:none}
+.divider::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;margin-left:-.5px;
+  background:var(--line-2);transition:background var(--dur),width var(--dur)}
+.divider .grip{position:relative;width:26px;height:44px;border-radius:99px;background:var(--panel);
+  border:1px solid var(--line-2);box-shadow:var(--shadow-lg);display:flex;align-items:center;justify-content:center;
+  gap:2px;transition:transform .2s var(--ease),background var(--dur),border-color var(--dur)}
+.divider .grip i{width:2px;height:14px;border-radius:2px;background:var(--fg-3);transition:background var(--dur)}
+.divider:hover .grip{transform:scale(1.08);border-color:var(--fg-3)}
+.divider:hover .grip i{background:var(--fg)}
+.divider:hover::before{background:var(--fg-3);width:2px}
+.divider.drag .grip{transform:scale(1.14);background:var(--fg);border-color:var(--fg)}
+.divider.drag .grip i{background:#fff}
+.divider.drag::before{background:var(--fg);width:2px}
+
+/* 分屏内的行 */
+.pro{display:grid;grid-template-columns:74px 1fr;gap:10px;padding:12px 0;border-bottom:1px dashed rgba(0,0,0,.07)}
+.pro:last-child{border-bottom:0}
+.pro .k{font-size:11px;color:var(--fg-2);letter-spacing:.03em;padding-top:2px;
+  font-family:var(--font-mono);text-transform:uppercase;opacity:.7}
+.pro .v{font-size:14px;line-height:1.78}
+.pro.hi .v{background:var(--hit-bg);border-radius:2px;padding:3px 6px;margin:-3px -6px}
+.pro.md .v{background:var(--miss-bg);border-radius:2px;padding:3px 6px;margin:-3px -6px}
+.kw{display:inline-block;padding:1px 5px;border-radius:2px;font-weight:600;
+  transition:background .3s var(--ease),color .3s var(--ease),transform .3s var(--ease)}
+.kw.hit{background:var(--hit-bg);color:var(--hit)}
+.kw.miss{background:var(--miss-bg);color:var(--miss)}
+.kw.new{animation:kwpop .44s var(--ease) both}
+@keyframes kwpop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.14)}100%{transform:scale(1);opacity:1}}
+
+/* 差异导航条 */
+.diffbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 14px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px}
+.diffbar .lbl{font-size:12px;color:var(--fg-2);letter-spacing:.03em}
+.diffbar .jump{font-size:12px;padding:4px 10px;border:1px solid var(--line-2);border-radius:99px;
+  transition:all var(--dur) var(--ease)}
+.diffbar .jump:hover{border-color:var(--fg);background:var(--fg);color:#fff}
+.diffbar .nm{margin-left:auto;font-family:var(--font-mono);font-size:12px;color:var(--fg-2)}
+
+/* 分屏统计 */
+.stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.stat3>div{background:var(--panel);padding:18px 16px;text-align:center}
+.stat3 .n{font-family:var(--font-mono);font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.stat3 .t{font-size:11.5px;color:var(--fg-2);margin-top:6px;letter-spacing:.03em}
+
+/* 横向对比条 */
+.barrow{display:grid;grid-template-columns:112px 1fr 46px;gap:12px;align-items:center;padding:9px 0;
+  border-bottom:1px dashed var(--line)}
+.barrow:last-child{border-bottom:0}
+.barrow .bn{font-size:12.5px;color:var(--fg-2)}
+.barrow .bt{height:7px;background:var(--bg-2);border-radius:99px;overflow:hidden;position:relative}
+.barrow .bt i{display:block;height:100%;width:0;border-radius:99px;transition:width 1s var(--ease)}
+.barrow .bf{font-family:var(--font-mono);font-size:12.5px;text-align:right;font-weight:600}
+
+/* 分屏对比的移动端：上下堆叠 */
+@media (max-width:820px){
+  .split{grid-template-columns:1fr;min-height:0}
+  .pane-l{border-right:0;border-bottom:1px solid var(--line-2)}
+  .split .pane-in{width:100% !important;max-width:100%}
+  .divider{display:none}
+  .stat3{grid-template-columns:1fr}
+}
+
+@media (max-width:640px){
+  section{padding:56px 0}
+  .wrap{padding:0 18px}
+  .paybox{gap:18px}
+  .ring{width:126px;height:126px}
+  .ring .val b{font-size:34px}
+  .pro{grid-template-columns:1fr;gap:3px}
+  .barrow{grid-template-columns:84px 1fr 42px}
+}
+/* 兜底：防横向溢出 */
+html,body{overflow-x:hidden;max-width:100%}
+img,svg,canvas,video{max-width:100%}
+pre,code{overflow-wrap:anywhere}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  .reveal{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<div id="topbar"><i></i></div>
+<div class="cf" id="cf"></div>
+
+<!-- ===== S0 HERO ===== -->
+<section id="s0-hero">
+  <div class="wrap">
+    <div class="sec-no">09 / 分屏对照 SPLIT</div>
+    <h1>左边是你的简历，<br>右边是岗位要的人。</h1>
+    <p class="muted" style="font-size:16px;max-width:640px;margin:16px 0 26px">
+      同一个屏幕，两栏对照。拖动中间的分割线，一眼看清<strong style="color:var(--fg)">差在哪、缺什么、怎么补</strong>。<br>
+      不是让你"写得更好"，是让你<strong style="color:var(--fg)">正好写在他要找的点上</strong>。
+    </p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-primary" onclick="go('s1')">免费诊断我的简历 <span class="arw">→</span></button>
+      <button class="btn btn-line" onclick="go('s3')">先看看样例报告</button>
+    </div>
+    <p class="tiny" style="margin-top:20px">
+      简历仅用于本次诊断，<strong style="color:var(--fg)">不用于任何模型训练</strong>，30 天内自动清除。
+    </p>
+  </div>
+</section>
+
+<!-- ===== S1 上传 ===== -->
+<section id="s1">
+  <div class="wrap">
+    <div class="sec-no">STEP 01 / 上传简历</div>
+    <div class="sec-head">
+      <h2>上传你的简历</h2>
+      <p class="muted">支持 PDF、Word（.docx），单文件不超过 10MB</p>
+    </div>
+
+    <!-- 待上传 -->
+    <div class="st on" data-state="idle">
+      <label class="cb" style="margin-bottom:18px">
+        <input type="checkbox" id="consent">
+        <span class="box"></span>
+        <span>我已阅读并同意<a href="#">《简历处理与授权告知》</a>，了解我的简历<strong style="color:var(--fg)">不会被用于模型训练</strong>，并可随时自助删除。</span>
+      </label>
+      <div class="drop" id="drop">
+        <svg class="drop-ico" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.4">
+          <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3" stroke-linecap="round"/>
+        </svg>
+        <h3>拖拽简历到这里，或点击选择文件</h3>
+        <p class="tiny" style="margin:8px 0 0">PDF / DOCX · 最大 10MB</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+          <button class="btn btn-primary btn-sm" type="button" onclick="upload()">选择文件</button>
+          <button class="btn btn-line btn-sm" type="button" onclick="show('s1','paste')">解析不了？粘贴文本</button>
+        </div>
+      </div>
+      <p class="tip" id="consentTip"></p>
+    </div>
+
+    <!-- 粘贴兜底 -->
+    <div class="st" data-state="paste">
+      <div class="card">
+        <h3 style="margin-bottom:4px">直接粘贴简历文本</h3>
+        <p class="tiny" style="margin-bottom:12px">从 PDF 或 Word 里全选复制内容粘进来即可，排版乱一点没关系，我们会自动重排。</p>
+        <textarea class="field" rows="9" placeholder="粘贴你的简历全文……" oninput="countPaste(this)"></textarea>
+        <p class="tip"><span class="mono" id="pasteN">0</span> 字 · 建议粘贴 300 字以上</p>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary btn-sm" onclick="upload()">开始解析</button>
+          <button class="btn btn-line btn-sm" onclick="show('s1','idle')">返回上传文件</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 解析中 -->
+    <div class="st" data-state="loading">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+          <span class="spin" style="border-color:var(--line);border-top-color:var(--brand);width:18px;height:18px"></span>
+          <strong id="loadTxt">正在解析简历结构…</strong>
+          <span class="mono tiny" id="loadPct" style="margin-left:auto">0%</span>
+        </div>
+        <div style="height:4px;background:#F1F2F4;border-radius:99px;overflow:hidden;margin-bottom:24px">
+          <i id="loadBar" style="display:block;height:100%;width:0;background:var(--brand);border-radius:99px;transition:width .3s var(--ease)"></i>
+        </div>
+        <div style="display:grid;gap:14px">
+          <div><div class="sk" style="width:32%"></div><div class="sk" style="width:74%;margin-top:9px"></div></div>
+          <div><div class="sk" style="width:26%"></div><div class="sk" style="width:88%;margin-top:9px"></div><div class="sk" style="width:62%;margin-top:9px"></div></div>
+          <div><div class="sk" style="width:34%"></div><div class="sk" style="width:70%;margin-top:9px"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 解析成功 -->
+    <div class="st" data-state="ok">
+      <div class="card" style="display:flex;align-items:center;gap:14px;border-color:#BBF7D0;background:#F0FDF4">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2">
+          <circle cx="12" cy="12" r="9.5" stroke-dasharray="60" stroke-dashoffset="60" class="draw"/>
+          <path d="M8 12.4l2.6 2.6L16.2 9.4" stroke-dasharray="14" stroke-dashoffset="14" class="draw d2"/>
+        </svg>
+        <div style="flex:1">
+          <strong style="color:#047857">解析成功</strong>
+          <p class="tiny" style="margin:2px 0 0">已识别 4 个模块 · 共 1,284 字 · 提取完整度 92%</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="show('s2')">核对内容 →</button>
+      </div>
+    </div>
+
+    <!-- 解析失败 -->
+    <div class="st" data-state="err">
+      <div class="card" style="border-color:#FECACA;background:#FEF2F2">
+        <div style="display:flex;gap:13px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="1.8" style="flex:0 0 auto">
+            <circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.2v.1" stroke-linecap="round"/>
+          </svg>
+          <div style="flex:1">
+            <strong style="color:var(--bad)">解析失败 · ERR_NO_TEXT</strong>
+            <p class="tiny" style="margin:4px 0 14px;color:#991B1B">
+              这个文件像是扫描件或图片型 PDF，没有可提取的文字层。<strong>不是你的问题</strong>，换成下面两种方式任意一种都可以继续。
+            </p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm pulse" style="position:relative" onclick="show('s1','paste')">改用粘贴文本（推荐）</button>
+              <button class="btn btn-line btn-sm" onclick="show('s1','idle')">重新上传文件</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S2 解析确认 ===== -->
+<section id="s2">
+  <div class="wrap">
+    <div class="sec-no">STEP 02 / 核对内容</div>
+    <div class="sec-head">
+      <h2>核对解析结果</h2>
+      <p class="muted">黄色标记的字段我们没完全确定，改一下能让诊断更准。</p>
+    </div>
+    <div class="card" style="padding:0">
+      <div style="padding:22px;border-bottom:1px solid var(--line)">
+        <div class="tiny" style="margin-bottom:6px">姓名</div>
+        <input class="field" value="张小明">
+      </div>
+      <div style="padding:22px;border-bottom:1px solid var(--line)">
+        <div class="tiny" style="margin-bottom:6px">教育背景</div>
+        <input class="field" value="华东师范大学 · 信息管理与信息系统 · 本科 · 2023.09-2027.06">
+      </div>
+      <div style="padding:22px;border-bottom:1px solid var(--line)">
+        <div class="tiny" style="margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          实习经历
+          <span class="badge md">待确认</span>
+        </div>
+        <textarea class="field" rows="3">2025.07-2025.09 某某科技 产品实习生
+协助产品经理整理用户反馈，参与需求评审，跟进开发进度。</textarea>
+        <p class="tip">这条我们只提取到 62%，建议补充：你负责的具体模块、影响的数据</p>
+      </div>
+      <div style="padding:22px">
+        <div class="tiny" style="margin-bottom:6px">项目经历</div>
+        <textarea class="field" rows="3">校园二手交易小程序（课程项目）
+担任组长，负责需求调研与原型设计，完成 MVP 并在校内试运行。</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="go('s3')">确认无误，生成诊断报告 <span class="arw">→</span></button>
+      <button class="btn btn-line" onclick="toast('已保存草稿，稍后可继续')">保存草稿</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S3 分屏对照 ===== -->
+<section id="s3">
+  <div class="wrap">
+    <div class="sec-no">STEP 03 / 分屏对照</div>
+    <div class="sec-head">
+      <h2>你的简历 ⚌ 岗位要求</h2>
+      <p class="muted">拖动中间的分割柄，逐行看差异。绿色是已覆盖，红色是缺口。</p>
+    </div>
+
+    <div class="diffbar">
+      <span class="lbl">跳到缺口</span>
+      <button class="jump" onclick="jumpDiff(0)">用户增长</button>
+      <button class="jump" onclick="jumpDiff(1)">A/B 测试</button>
+      <button class="jump" onclick="jumpDiff(2)">跨部门协作</button>
+      <button class="jump" onclick="resetSplit()">重置分屏</button>
+      <span class="nm" id="splitPct">50% / 50%</span>
+    </div>
+
+    <div class="split" id="split">
+      <!-- 左：你的简历 -->
+      <div class="pane pane-l">
+        <div class="pane-tag"><span class="sw"></span>你的简历<span class="cnt" id="cntL">4 段 · 1,284 字</span></div>
+        <div class="pane-in" id="paneL">
+          <div class="pro" data-k="0"><div class="k">基本信息</div><div class="v">张小明 · 华东师范大学 · 信息管理与信息系统 · 本科</div></div>
+          <div class="pro"><div class="k">实习</div><div class="v"><strong>某某科技 · 产品实习生</strong> 2025.07-2025.09<br>协助产品经理整理用户反馈，参与需求评审，跟进开发进度。</div></div>
+          <div class="pro md" data-k="2"><div class="k">项目</div><div class="v"><strong>校园二手交易小程序 · 组长</strong><br>担任组长，负责需求调研与原型设计，完成 MVP 并在校内试运行。</div></div>
+          <div class="pro"><div class="k">技能</div><div class="v">Office、SQL、Axure</div></div>
+          <div class="pro md" data-k="1"><div class="k">其他</div><div class="v">（无）</div></div>
+        </div>
+      </div>
+
+      <!-- 右：岗位要求 -->
+      <div class="pane pane-r">
+        <div class="pane-tag"><span class="sw"></span>目标岗位 · 字节跳动 产品经理<span class="cnt" id="cntR">18 个关键词</span></div>
+        <div class="pane-in" id="paneR">
+          <div class="pro"><div class="k">岗位职责</div><div class="v">负责产品<span class="kw hit">用户增长</span>策略制定与落地，通过<span class="kw hit">数据分析</span>定位增长机会。</div></div>
+          <div class="pro hi" data-k="0"><div class="k">职责 2</div><div class="v">独立完成<span class="kw hit">用户调研</span>、<span class="kw hit">竞品分析</span>，输出<span class="kw hit">需求文档</span>并推动落地。</div></div>
+          <div class="pro hi" data-k="2"><div class="k">职责 3</div><div class="v">与设计、开发、测试<span class="kw miss">跨部门协作</span>，跟进版本迭代全流程。</div></div>
+          <div class="pro" data-k="1"><div class="k">职责 4</div><div class="v">设计并执行 <span class="kw miss">A/B 测试</span>，持续优化<span class="kw miss">转化漏斗</span>。</div></div>
+          <div class="pro"><div class="k">任职要求</div><div class="v">熟练使用 <span class="kw hit">SQL</span>，具备<span class="kw miss">用户增长</span>相关实习经验；熟悉 <span class="kw hit">Axure</span>、Figma。</div></div>
+        </div>
+      </div>
+
+      <!-- 分割柄 -->
+      <div class="divider" id="divider" role="separator" aria-label="拖动调整分屏比例" tabindex="0">
+        <span class="grip"><i></i><i></i></span>
+      </div>
+    </div>
+
+    <div class="stat3" style="margin-top:18px">
+      <div><div class="n" style="color:var(--ok)" id="nHit">0</div><div class="t">已命中关键词</div></div>
+      <div><div class="n" style="color:var(--bad)" id="nMiss">0</div><div class="t">缺失关键词</div></div>
+      <div><div class="n" style="color:var(--warn)" id="nScore">0</div><div class="t">岗位匹配度</div></div>
+    </div>
+
+    <div class="card card-soft" style="margin-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:260px">
+        <strong style="font-size:15.5px">缺口集中在增长与数据类</strong>
+        <p class="tiny" style="margin:5px 0 0">不是硬塞关键词，而是找到你确实做过、但没写出来的部分。往下看逐条改写。</p>
+      </div>
+      <button class="btn btn-primary" onclick="go('s4')">逐条改写 <span class="arw">→</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S4 逐条改写 ===== -->
+<section id="s4">
+  <div class="wrap">
+    <div class="sec-no">STEP 04 / 逐条改写 · 核心</div>
+    <div class="sec-head">
+      <h2>同样左右对照，这次是"改前 vs 改后"</h2>
+      <p class="muted">左边原文，右边改写。每条都能单独看到差异，不是整篇糊成一团。</p>
+    </div>
+
+    <div class="card">
+      <div class="tiny" style="margin-bottom:8px;display:flex;justify-content:space-between">
+        <span>已锁定的目标岗位描述（JD）</span>
+        <span class="mono" id="jdN" style="color:var(--fg-3)">0 字</span>
+      </div>
+      <textarea class="field" rows="6" id="jd" placeholder="粘贴岗位描述全文，例如：&#10;岗位职责：1. 负责用户增长策略……&#10;任职要求：1. 数据分析能力强，熟练使用 SQL……"></textarea>
+      <p class="tip" id="jdTip">粘贴 200 字以上，关键词提取会更准</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-blue" id="jdBtn" disabled onclick="match()">开始匹配</button>
+        <button class="btn btn-line btn-sm" onclick="fillJD()">填入示例 JD</button>
+      </div>
+    </div>
+
+    <!-- 改写对照（核心） -->
+    <div class="st on" data-state="matched" style="margin-top:16px">
+
+      <!-- 顶部并排指标 -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px">
+        <div class="card" style="text-align:center;padding:18px">
+          <div class="mono" style="font-size:30px;font-weight:700;color:var(--warn);letter-spacing:-.03em" id="s4b">0</div>
+          <div class="tiny" style="margin-top:5px">改写前匹配度</div>
+        </div>
+        <div class="card" style="text-align:center;padding:18px;border-color:#BBF7D0;background:#F0FDF4">
+          <div class="mono" style="font-size:30px;font-weight:700;color:var(--ok);letter-spacing:-.03em" id="s4a">0</div>
+          <div class="tiny" style="margin-top:5px">改写后预计</div>
+        </div>
+        <div class="card" style="text-align:center;padding:18px">
+          <div class="mono" style="font-size:30px;font-weight:700;letter-spacing:-.03em" id="s4k">0</div>
+          <div class="tiny" style="margin-top:5px">补齐关键词</div>
+        </div>
+      </div>
+
+      <!-- 改写前后分屏 -->
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+        <span class="mono tiny" id="splitPct2">50% / 50%</span>
+      </div>
+      <div class="split" id="split2" style="min-height:340px">
+        <div class="pane pane-l">
+          <div class="pane-tag"><span class="sw"></span>改前 · 你的原文</div>
+          <div class="pane-in" id="paneL2">
+            <div class="pro" data-k="0"><div class="k">实习 · 1</div><div class="v">协助产品经理整理用户反馈，参与需求评审，跟进开发进度。</div></div>
+            <div class="pro md" data-k="1"><div class="k">实习 · 2</div><div class="v">参与功能迭代，配合测试上线。</div></div>
+            <div class="pro md" data-k="2"><div class="k">项目 · 1</div><div class="v">担任组长，负责需求调研与原型设计，完成 MVP 并在校内试运行。</div></div>
+            <div class="pro"><div class="k">技能栏</div><div class="v">Office、SQL、Axure</div></div>
+          </div>
+        </div>
+        <div class="pane pane-r">
+          <div class="pane-tag"><span class="sw"></span>改后 · 按该岗位重写</div>
+          <div class="pane-in" id="paneR2">
+            <div class="pro hi" data-k="0"><div class="k">实习 · 1</div><div class="v"><span class="kw hit">归集 200+ 条用户反馈</span>，输出<span class="kw hit">竞品分析报告</span>，推动 3 项功能进入迭代；独立维护<span class="kw hit">需求文档（PRD）</span>，<span class="kw miss">协调设计、开发、测试</span>完成 2 个版本上线。</div></div>
+            <div class="pro hi" data-k="1"><div class="k">实习 · 2</div><div class="v">通过<span class="kw miss">小范围灰度验证</span>方案，功能上线后<span class="kw miss">次日留存提升 8%</span>。</div></div>
+            <div class="pro hi" data-k="2"><div class="k">项目 · 1</div><div class="v">完成<span class="kw hit">用户调研</span>与<span class="kw hit">需求文档</span>，设计 MVP 并校内试运行，累计 <span class="kw hit">1,200+ 用户</span>；主导<span class="kw miss">增长策略</span>复盘，<span class="kw miss">转化率提升 22%</span>。</div></div>
+            <div class="pro hi" data-k=""><div class="k">技能栏</div><div class="v"><span class="kw hit">需求文档（PRD）</span>、<span class="kw hit">用户调研</span>、<span class="kw hit">数据分析（SQL）</span>、<span class="kw miss">A/B 测试</span>、<span class="kw hit">Axure</span>、<span class="kw hit">竞品分析</span></div></div>
+          </div>
+        </div>
+        <div class="divider" id="divider2" role="separator" aria-label="拖动调整分屏比例" tabindex="0">
+          <span class="grip"><i></i><i></i></span>
+        </div>
+      </div>
+
+      <p class="tiny" style="margin-top:12px">
+        红色词条是 JD 要求、但你原文确实没写到的部分。系统<strong style="color:var(--fg)">不会替你编造经历</strong>，只会用更接近岗位语言的写法表达你做过的事。
+      </p>
+
+      <!-- 缺口分布 -->
+      <div class="card" style="margin-top:16px">
+        <h3 style="margin-bottom:4px">缺口分布</h3>
+        <p class="tiny" style="margin-bottom:14px">按 JD 中的权重排序，从上到下是最该优先补的。</p>
+        <div class="barrow"><span class="bn">用户增长</span><span class="bt"><i style="background:var(--bad)" data-w="86"></i></span><span class="bf" style="color:var(--bad)">高</span></div>
+        <div class="barrow"><span class="bn">A/B 测试</span><span class="bt"><i style="background:var(--bad)" data-w="72"></i></span><span class="bf" style="color:var(--bad)">高</span></div>
+        <div class="barrow"><span class="bn">数据分析</span><span class="bt"><i style="background:var(--warn)" data-w="54"></i></span><span class="bf" style="color:var(--warn)">中</span></div>
+        <div class="barrow"><span class="bn">跨部门协作</span><span class="bt"><i style="background:var(--warn)" data-w="41"></i></span><span class="bf" style="color:var(--warn)">中</span></div>
+        <div class="barrow"><span class="bn">需求文档</span><span class="bt"><i style="background:var(--ok)" data-w="18"></i></span><span class="bf" style="color:var(--ok)">低</span></div>
+      </div>
+
+      <div class="lock card" id="lock" style="margin-top:16px;border-color:var(--fg)">
+        <div class="blur">
+          <h3 style="margin-bottom:14px">完整润色版（可直接投递）</h3>
+          <p class="tiny" style="margin-bottom:12px">已按该 JD 重排经历顺序、补齐关键词、压缩到一页</p>
+          <div class="diff" style="opacity:.85">
+            张小明 · 华东师范大学 · 产品方向<br><br>
+            <strong>实习经历</strong><br>
+            某某科技 · 产品实习生 · 2025.07-2025.09<br>
+            · 归集 200+ 条用户反馈，输出竞品分析报告，推动 3 项功能进入迭代<br>
+            · 独立维护需求文档（PRD），协调设计、开发、测试完成 2 个版本上线<br>
+            · 通过小范围灰度验证方案，功能上线后次日留存提升 8%<br><br>
+            <strong>项目经历</strong><br>
+            校园二手交易小程序 · 组长<br>
+            · 完成用户调研与需求文档，设计 MVP 并校内试运行，累计 1,200+ 用户
+          </div>
+        </div>
+        <div class="veil">
+          <div style="max-width:330px;margin:0 auto;padding:0 18px">
+            <div style="font-size:26px">🔒</div>
+            <strong style="display:block;font-size:17px;margin:8px 0 6px">完整润色版已生成</strong>
+            <p class="tiny" style="margin:0 0 16px">解锁后可下载排版完整的 PDF / Word，直接投递</p>
+            <button class="btn btn-primary" onclick="go('s5')">解锁完整版 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S5 付费 ===== -->
+<section id="s5">
+  <div class="wrap">
+    <div class="sec-no">STEP 05 / 解锁</div>
+    <div class="sec-head">
+      <h2>解锁完整润色版</h2>
+      <p class="muted">一次付费，交付排版完整、可直接投递的 PDF / Word。</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px">
+      <div class="sku" onclick="pick(this,'single')">
+        <div class="tiny" style="margin-bottom:10px">单个岗位</div>
+        <div class="price">¥9.9 <em>/ 份</em></div>
+        <p class="tiny" style="margin:12px 0 0">针对当前这个岗位生成一份润色版</p>
+        <ul class="tiny" style="margin:14px 0 0;padding-left:18px;line-height:2">
+          <li>完整润色版 PDF / Word</li>
+          <li>关键词缺口清单</li>
+          <li>结果保留 7 天</li>
+        </ul>
+      </div>
+      <div class="sku best" onclick="pick(this,'season')">
+        <span class="flag">推荐</span>
+        <div class="tiny" style="margin-bottom:10px">校招季 · 不限岗位数</div>
+        <div class="price">¥39.9 <em>/ 整季</em></div>
+        <p class="tiny" style="margin:12px 0 0">海投 30-100 家？每个岗位都出一版</p>
+        <ul class="tiny" style="margin:14px 0 0;padding-left:18px;line-height:2">
+          <li><strong style="color:var(--fg)">不限岗位数</strong>，投多少家做多少版</li>
+          <li>历史版本永久保留</li>
+          <li>优先处理队列</li>
+          <li>规则更新至次年 6 月</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h3 style="margin-bottom:14px">选择支付方式</h3>
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="btn btn-line btn-sm" id="pmWx" onclick="payMode('wx')" style="border-color:var(--fg);background:var(--bg-2)">微信支付</button>
+        <button class="btn btn-line btn-sm" id="pmQr" onclick="payMode('qr')">微信收款码（人工核销）</button>
+      </div>
+
+      <!-- 待支付 -->
+      <div class="st on" data-state="wait">
+        <div class="paybox">
+          <div class="qr">
+            <svg viewBox="0 0 100 100" width="114" height="114" shape-rendering="crispEdges">
+              <rect width="100" height="100" fill="#fff"/>
+              <g fill="#111827">
+                <rect x="6" y="6" width="24" height="24"/><rect x="11" y="11" width="14" height="14" fill="#fff"/><rect x="15" y="15" width="6" height="6"/>
+                <rect x="70" y="6" width="24" height="24"/><rect x="75" y="11" width="14" height="14" fill="#fff"/><rect x="79" y="15" width="6" height="6"/>
+                <rect x="6" y="70" width="24" height="24"/><rect x="11" y="75" width="14" height="14" fill="#fff"/><rect x="15" y="79" width="6" height="6"/>
+                <rect x="38" y="8" width="6" height="6"/><rect x="50" y="8" width="6" height="6"/><rect x="44" y="16" width="6" height="6"/>
+                <rect x="56" y="16" width="6" height="6"/><rect x="38" y="24" width="6" height="6"/><rect x="50" y="24" width="12" height="6"/>
+                <rect x="8" y="38" width="6" height="6"/><rect x="20" y="38" width="6" height="6"/><rect x="14" y="46" width="12" height="6"/>
+                <rect x="8" y="56" width="12" height="6"/><rect x="26" y="56" width="6" height="6"/>
+                <rect x="38" y="38" width="12" height="12"/><rect x="56" y="38" width="6" height="6"/>
+                <rect x="68" y="38" width="12" height="6"/><rect x="84" y="38" width="8" height="6"/>
+                <rect x="38" y="56" width="6" height="12"/><rect x="50" y="56" width="12" height="6"/>
+                <rect x="68" y="50" width="6" height="18"/><rect x="80" y="52" width="12" height="6"/>
+                <rect x="38" y="74" width="12" height="6"/><rect x="56" y="72" width="6" height="12"/>
+                <rect x="68" y="74" width="6" height="6"/><rect x="80" y="72" width="6" height="12"/>
+                <rect x="44" y="86" width="12" height="6"/><rect x="62" y="86" width="6" height="6"/>
+                <rect x="74" y="86" width="14" height="6"/>
+              </g>
+            </svg>
+            <i class="scan"></i>
+          </div>
+          <div style="flex:1;min-width:220px">
+            <div class="cd"><span class="dot"></span>请在 <span class="mono" id="cd">15:00</span> 内完成支付</div>
+            <p class="tiny" style="margin:12px 0 0">金额 <strong class="mono" style="color:var(--fg);font-size:16px" id="amt">¥39.9</strong> · 校招季不限次</p>
+            <p class="tiny" style="margin:6px 0 14px">支付完成后点击下方按钮，系统会自动核销</p>
+            <button class="btn btn-blue" id="payBtn" onclick="paying()">我已完成支付</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 支付中 -->
+      <div class="st" data-state="ing">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="spin" style="border-color:var(--line);border-top-color:var(--brand);width:17px;height:17px"></span>
+          <div><strong>正在核销…</strong><p class="tiny" style="margin:2px 0 0">通常 10-30 秒完成，请不要关闭页面</p></div>
+        </div>
+      </div>
+
+      <!-- 支付失败 -->
+      <div class="st" data-state="fail">
+        <div class="card" style="border-color:#FECACA;background:#FEF2F2;padding:18px">
+          <strong style="color:var(--bad)">未检测到支付记录</strong>
+          <p class="tiny" style="margin:5px 0 14px;color:#991B1B">可能是支付未完成，或到账有延迟。你可以重试，或改用人工核销。</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="paying()">重试核销</button>
+            <button class="btn btn-line btn-sm" onclick="toast('已提交订单号，客服将在 10 分钟内处理')">提交订单号人工核销</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 已支付 -->
+      <div class="st" data-state="done">
+        <div class="card" style="border-color:#BBF7D0;background:#F0FDF4;display:flex;align-items:center;gap:14px">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2">
+            <circle cx="12" cy="12" r="9.5"/><path d="M8 12.4l2.6 2.6L16.2 9.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div style="flex:1">
+            <strong style="color:#047857">支付成功，已解锁</strong>
+            <p class="tiny" style="margin:2px 0 0">校招季不限次 · 有效期至 2027-06-30</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openLock()">查看润色版 →</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="tiny" style="margin-top:14px">支付即表示同意<a href="#">《服务条款》</a>。未使用可申请退款，3 个工作日内原路退回。</p>
+  </div>
+</section>
+
+<!-- ===== S6 结果 ===== -->
+<section id="s6">
+  <div class="wrap">
+    <div class="sec-no">STEP 06 / 导出与版本</div>
+    <div class="sec-head">
+      <h2>导出与版本管理</h2>
+      <p class="muted">一份底稿，针对不同岗位出多版，不再一套简历海投。</p>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px">
+        <div>
+          <strong style="font-size:16px">字节跳动 · 产品经理（校招）</strong>
+          <p class="tiny" style="margin:3px 0 0">匹配度 <strong class="mono" style="color:var(--warn)">62</strong> → 润色后预计 <strong class="mono" style="color:var(--ok)">84</strong></p>
+        </div>
+        <span class="badge lo">已解锁</span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="down('PDF')">下载 PDF</button>
+        <button class="btn btn-line btn-sm" onclick="down('Word')">下载 Word</button>
+        <button class="btn btn-line btn-sm" onclick="toast('已复制分享链接')">复制分享链接</button>
+      </div>
+      <p class="tip" id="dlTip"></p>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin-bottom:4px">我的简历版本</h3>
+      <p class="tiny" style="margin-bottom:14px">每投一个岗位就出一版，投递前对一下岗位名，别投错。</p>
+      <div class="ver"><div><strong style="font-size:14.5px">字节跳动 · 产品经理</strong><span class="tiny" style="margin-left:8px">9-23 创建</span></div><span class="mono badge md">62 → 84</span></div>
+      <div class="ver"><div><strong style="font-size:14.5px">腾讯 · 运营培训生</strong><span class="tiny" style="margin-left:8px">9-21 创建</span></div><span class="mono badge lo">71 → 88</span></div>
+      <div class="ver"><div><strong style="font-size:14.5px">通用底稿（无 JD）</strong><span class="tiny" style="margin-left:8px">9-20 创建</span></div><span class="mono badge md">78</span></div>
+      <button class="btn btn-line btn-sm" style="margin-top:14px" onclick="toast('已保存新的空白版本')">+ 新建一个岗位版本</button>
+    </div>
+
+    <div class="card card-soft" style="margin-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:250px">
+        <strong style="font-size:15.5px">还有别的岗位？</strong>
+        <p class="tiny" style="margin:4px 0 0">再贴一个 JD，30 秒出匹配度。秋招手上有 5 个岗位在投的话，每投一个都过一遍。</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="go('s4')">贴下一个 JD <span class="arw">→</span></button>
+    </div>
+
+    <div class="card" style="margin-top:16px;border-color:var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#FFFDF5;border-color:#FDE68A">
+      <div style="font-size:22px">💬</div>
+      <div style="flex:1;min-width:220px">
+        <strong style="font-size:15px">加校招群，领 3 份高分底稿</strong>
+        <p class="tiny" style="margin:3px 0 0">群内每周更新真实岗位 JD 与命中关键词，群里同学先看到。</p>
+      </div>
+      <button class="btn btn-line btn-sm" onclick="toast('已复制群二维码链接')">加群</button>
+    </div>
+
+    <p class="tiny" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
+      你的简历数据可随时在<a href="#">这里</a>自助删除，删除后 7 日内从生产库与备份中物理清除。
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    风格 09 · 分屏对照 Split — 左右 50/50 / 可拖分割柄 / 逐行 diff 高亮<br>
+    本页为设计原型，数据均为演示态，不含真实 AI 调用与真实支付。
+  </div>
+</footer>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;left:50%;bottom:34px;transform:translate(-50%,18px);z-index:90;
+  background:var(--fg);color:#fff;padding:11px 19px;border-radius:var(--radius);font-size:14px;
+  opacity:0;pointer-events:none;transition:all .3s var(--ease);box-shadow:0 12px 32px rgba(0,0,0,.22)"></div>
+
+<script>
+/* ============ [A] ENGINE（十套逐字相同） ============ */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+
+function show(sec,state){
+  const host=typeof sec==='string'?$('#'+sec):sec;
+  if(!host) return;
+  $$(':scope > .wrap > .st',host).forEach(el=>{
+    el.classList.toggle('on', el.dataset.state===state);
+  });
+}
+function go(id){
+  const el=$('#'+id);
+  if(el) window.scrollTo({top:el.offsetTop-8,behavior:'smooth'});
+}
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg;
+  t.style.opacity='1'; t.style.transform='translate(-50%,0)';
+  clearTimeout(t._t); t._t=setTimeout(()=>{t.style.opacity='0';t.style.transform='translate(-50%,18px)'},2000);
+}
+/* 数字滚动 */
+function countTo(el,to,dur=1100,suffix=''){
+  if(!el) return;
+  const from=parseInt(el.dataset.v||0,10); el.dataset.v=to;
+  const t0=performance.now();
+  (function step(t){
+    const k=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-k,3);
+    el.textContent=Math.round(from+(to-from)*e)+suffix;
+    if(k<1) requestAnimationFrame(step);
+  })(t0);
+}
+/* 环形生长 */
+function ring(barId,numId,valEl,pct,dur=1200){
+  const bar=$('#'+barId), len=parseFloat(bar.getAttribute('stroke-dasharray'));
+  requestAnimationFrame(()=>{ bar.style.strokeDashoffset=len*(1-pct/100); });
+  countTo($('#'+numId),pct,dur);
+}
+/* 滚动入场 */
+function reveal(el,delay=0){
+  if(!('IntersectionObserver' in window)){el.classList.add('in');return;}
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{
+    if(e.isIntersecting){ setTimeout(()=>e.target.classList.add('in'),delay); io.unobserve(e.target); }
+  })},{threshold:.12});
+  io.observe(el);
+}
+/* 彩带 */
+function confetti(){
+  const box=$('#cf'), cs=['#2563EB','#059669','#D97706','#DC2626','#111827','#60A5FA'];
+  if(!box) return;
+  for(let i=0;i<64;i++){
+    const s=document.createElement('i');
+    s.style.left=Math.random()*100+'%';
+    s.style.background=cs[i%cs.length];
+    s.style.animationDuration=(2.1+Math.random()*1.5)+'s';
+    s.style.animationDelay=(Math.random()*.4)+'s';
+    s.style.opacity=.85;
+    box.appendChild(s); setTimeout(()=>s.remove(),4200);
+  }
+}
+/* 顶部进度 */
+function topProgress(){
+  const bar=$('#topbar i'); if(!bar) return;
+  const f=()=>{ const h=document.documentElement.scrollHeight-innerHeight;
+    bar.style.width=(h>0?Math.min(100,scrollY/h*100):0)+'%'; };
+  addEventListener('scroll',f,{passive:true}); f();
+}
+/* 已支付遮罩溶解 */
+function openLock(){ const l=$('#lock'); if(l) l.classList.add('open'); }
+
+/* ============ [B] CONFIG（本风格） ============ */
+const THEME={id:'01-minimal',dark:false};
+
+/* ============ [C] CONTENT / 交互绑定 ============ */
+document.addEventListener('DOMContentLoaded',()=>{
+  topProgress();
+  $$('.reveal').forEach((el,i)=>reveal(el,i*60));
+
+  /* 初始状态 */
+  show('s1','idle');
+  const s4=$('#s4'); if(s4) $$('.st',s4).forEach(el=>el.classList.add('on'));
+
+  /* 授权勾选校验 */
+  const cb=$('#consent');
+  cb.addEventListener('change',()=>{ if(cb.checked) $('#consentTip').textContent=''; });
+
+  /* 拖拽 */
+  const drop=$('#drop');
+  ['dragenter','dragover'].forEach(k=>drop.addEventListener(k,e=>{e.preventDefault();drop.classList.add('over')}));
+  ['dragleave','drop'].forEach(k=>drop.addEventListener(k,e=>{e.preventDefault();drop.classList.remove('over')}));
+  drop.addEventListener('drop',()=>upload());
+  drop.addEventListener('click',e=>{ if(e.target===drop||e.target.closest('svg')||e.target.tagName==='H3'||e.target.tagName==='P') upload(); });
+
+  /* JD 字数 */
+  const jd=$('#jd');
+  jd.addEventListener('input',()=>{
+    const n=jd.value.trim().length;
+    $('#jdN').textContent=n+' 字';
+    const ok=n>=100;
+    $('#jdBtn').disabled=!ok;
+    $('#jdTip').textContent = ok? '已就绪，可以开始匹配' : (n===0?'粘贴 200 字以上，关键词提取会更准':'再多粘一点，至少 100 字');
+    $('#jdTip').classList.toggle('bad', n>0 && !ok);
+  });
+
+  /* 版本卡选中反馈 */
+  $$('.sku').forEach(s=>s.addEventListener('click',()=>{}));
+
+  /* 倒计时 */
+  let left=15*60;
+  setInterval(()=>{
+    if(document.hidden) return;
+    left=Math.max(0,left-1);
+    const m=String(Math.floor(left/60)).padStart(2,'0'), ss=String(left%60).padStart(2,'0');
+    const el=$('#cd'); if(el) el.textContent=m+':'+ss;
+  },1000);
+
+  /* 评分环：本风格无环形（改用分屏统计），保留空值保护 */
+  const ring1=$('#ring1');
+  if(ring1 && 'IntersectionObserver' in window){
+    const io=new IntersectionObserver(es=>es.forEach(e=>{
+      if(e.isIntersecting){ ring('ring1bar','ring1num',null,78); io.unobserve(e.target); }
+    }),{threshold:.5});
+    io.observe(ring1);
+  } else if(ring1){ ring('ring1bar','ring1num',null,78); }
+
+  /* 动画：SVG 描边 */
+  const st=document.createElement('style');
+  st.textContent='.draw{animation:draw .6s var(--ease) forwards}.d2{animation-delay:.35s}@keyframes draw{to{stroke-dashoffset:0}}';
+  document.head.appendChild(st);
+});
+
+/* 上传流程 */
+function upload(){
+  const ck=$('#consent'); if(ck && !ck.checked){
+    $('#consentTip').textContent='请先勾选同意《简历处理与授权告知》';
+    $('#consentTip').classList.add('bad');
+    const l=$('.cb'); if(l){ l.classList.add('shake'); setTimeout(()=>l.classList.remove('shake'),500); }
+    toast('请先同意授权告知');
+    return;
+  }
+  show('s1','loading');
+  const txts=['正在解析简历结构…','正在识别教育背景…','正在提取实习与项目经历…','正在校验内容完整性…'];
+  let p=0,i=0;
+  const t=setInterval(()=>{
+    p=Math.min(100,p+Math.random()*13+5);
+    $('#loadBar').style.width=p+'%';
+    $('#loadPct').textContent=Math.round(p)+'%';
+    const ni=Math.min(txts.length-1,Math.floor(p/26));
+    if(ni!==i){i=ni;$('#loadTxt').textContent=txts[i];}
+    if(p>=100){ clearInterval(t); setTimeout(()=>show('s1','ok'),320); }
+  },210);
+}
+function countPaste(el){
+  $('#pasteN').textContent=el.value.trim().length;
+}
+function fillJD(){
+  const t=`【岗位职责】
+1. 负责产品用户增长策略的制定与落地，通过数据分析定位增长机会；
+2. 独立完成用户调研、竞品分析，输出需求文档（PRD）并推动落地；
+3. 与设计、开发、测试跨部门协作，跟进版本迭代全流程；
+4. 设计并执行 A/B 测试，持续优化转化漏斗。
+
+【任职要求】
+1. 本科及以上学历，2027 届毕业生优先；
+2. 数据分析能力强，熟练使用 SQL，具备用户增长相关实习经验；
+3. 有较强的逻辑思维与沟通能力，能独立推进项目；
+4. 熟悉 Axure、Figma 等原型工具，有完整项目经验者优先。`;
+  $('#jd').value=t; $('#jd').dispatchEvent(new Event('input'));
+}
+/* 匹配流程：09 的 S4 直接展示逐条改写对照，此处仅保留可选的匹配动画（已无对应 UI 时安全跳过） */
+function match(){
+  const s4=$('#s4'); if(!s4) return;
+  const box=$('[data-state="matching"]',s4);
+  if(box){                                   // 若该风格保留了"匹配中"状态
+    $$('.st',s4).forEach(el=>el.classList.remove('on'));
+    box.classList.add('on');
+    const chips=$$('#mChips .chip',s4);
+    chips.forEach(c=>c.classList.remove('hit','lit'));
+    chips.forEach((c,i)=>setTimeout(()=>{c.classList.add('hit','lit')},i*130));
+    const txts=['正在提取 JD 关键词…','正在比对你的简历…','正在按位置权重计算匹配度…'];
+    let i=0; const t=setInterval(()=>{i++;if(i<txts.length){const mt=$('#mTxt',s4); if(mt) mt.textContent=txts[i];}},620);
+    setTimeout(()=>{
+      clearInterval(t);
+      $$('.st',s4).forEach(el=>el.classList.remove('on'));
+      const m=$('[data-state="matched"]',s4); if(m) m.classList.add('on');
+      ring('ring2bar','ring2num',null,62);
+    },2100);
+    return;
+  }
+  /* 09：直接刷新分屏统计与缺口条 */
+  countTo($('#nHit'),11,900); countTo($('#nMiss'),7,900); countTo($('#nScore'),62,1000);
+  const b=$('.barrow'); if(b) $$('.barrow .bt i',s4).forEach((el,i)=>setTimeout(()=>{el.style.width=el.dataset.w+'%'},i*110));
+  toast('已按该 JD 重新计算匹配度');
+}
+/* 付费 */
+let mode='wx';
+function pick(el,type){
+  $$('.sku').forEach(s=>s.classList.remove('best'));
+  el.classList.add('best');
+  $('#amt').textContent = type==='season' ? '¥39.9' : '¥9.9';
+  toast(type==='season'?'已选：校招季不限次 ¥39.9':'已选：单次 ¥9.9');
+}
+function payMode(m){
+  mode=m;
+  $('#pmWx').style.cssText = m==='wx' ? 'border-color:var(--fg);background:var(--bg-2)' : '';
+  $('#pmQr').style.cssText = m==='qr' ? 'border-color:var(--fg);background:var(--bg-2)' : '';
+  toast(m==='wx'?'已切换为微信支付':'已切换为收款码核销');
+}
+function paying(){
+  $$('.st',$('#s5')).forEach(el=>el.classList.remove('on'));
+  const host=$('#s5'); $$(':scope > .wrap > .st',host).forEach(el=>el.classList.remove('on'));
+  $('[data-state="ing"]').classList.add('on');
+  setTimeout(()=>{
+    $$(':scope > .wrap > .st',host).forEach(el=>el.classList.remove('on'));
+    $('[data-state="done"]').classList.add('on');
+    confetti(); toast('支付成功，已解锁完整润色版');
+  },2100);
+}
+/* 导出 */
+function down(fmt){
+  $('#dlTip').textContent='正在生成 '+fmt+' 文件…';
+  setTimeout(()=>{ $('#dlTip').textContent='✓ '+fmt+' 已下载'; toast('已下载 '+fmt); },900);
+}
+
+/* ============ [D] SPLIT 专属交互 ============ */
+/* 拖动分割柄：两个分屏独立实例 */
+function setupSplit(id,pctId){
+  const root=$('#'+id); if(!root) return;
+  const dv=$('.divider',root); if(!dv) return;
+  let dragging=false;
+
+  const setPct=(p)=>{
+    p=Math.max(22,Math.min(78,p));
+    root.style.setProperty('--split',p+'%');
+    const lab=$('#'+pctId);
+    if(lab) lab.textContent=Math.round(p)+'% / '+Math.round(100-p)+'%';
+  };
+
+  const onMove=(clientX)=>{
+    const r=root.getBoundingClientRect();
+    setPct((clientX-r.left)/r.width*100);
+  };
+
+  dv.addEventListener('pointerdown',e=>{
+    e.preventDefault();                       // 关键：阻止文本选择
+    dragging=true; dv.classList.add('drag');
+    try{ dv.setPointerCapture(e.pointerId); }catch(_){}
+    document.body.style.cursor='col-resize';
+    document.body.style.userSelect='none';
+    document.body.classList.add('dragging');
+  });
+  dv.addEventListener('pointermove',e=>{ if(dragging) onMove(e.clientX); });
+  const endDrag=()=>{
+    if(!dragging) return;
+    dragging=false; dv.classList.remove('drag');
+    document.body.style.cursor=''; document.body.style.userSelect='';
+    document.body.classList.remove('dragging');
+  };
+  dv.addEventListener('pointerup',endDrag);
+  dv.addEventListener('pointercancel',endDrag);
+  dv.addEventListener('lostpointercapture',endDrag);
+  /* 键盘可达：左右方向键微调 */
+  dv.addEventListener('keydown',e=>{
+    const cur=parseFloat(root.style.getPropertyValue('--split'))||50;
+    if(e.key==='ArrowLeft'){ setPct(cur-4); e.preventDefault(); }
+    if(e.key==='ArrowRight'){ setPct(cur+4); e.preventDefault(); }
+  });
+
+  setPct(50);
+  return {root,setPct};
+}
+/* 跳到某个缺口：高亮左右两侧对应行 + 轻推分屏 */
+function jumpDiff(k){
+  const split=$('#split'); if(!split) return;
+  $$('.pro[data-k]',split).forEach(el=>{
+    const on = el.dataset.k===String(k);
+    el.style.transition='background .3s var(--ease)';
+    el.style.background = on ? 'rgba(220,38,38,.13)' : '';
+    if(on) setTimeout(()=>el.style.background='',1600);
+  });
+  toast('已定位缺口：'+['用户增长','A/B 测试','跨部门协作'][k]||'');
+}
+function resetSplit(){
+  const a=SPLIT_A, b=SPLIT_B;
+  if(a) a.setPct(50);
+  if(b) b.setPct(50);
+  toast('分屏已重置为 50 / 50');
+}
+
+let SPLIT_A=null, SPLIT_B=null;
+document.addEventListener('DOMContentLoaded',()=>{
+  SPLIT_A=setupSplit('split','splitPct');
+  SPLIT_B=setupSplit('split2','splitPct2');
+
+  /* 滚动到分屏区时：关键词逐个点亮 + 统计数字滚动 */
+  const s3=$('#s3');
+  if('IntersectionObserver' in window && s3){
+    const io=new IntersectionObserver(es=>es.forEach(e=>{
+      if(!e.isIntersecting) return;
+      $$('.kw.hit',s3).forEach((el,i)=>setTimeout(()=>el.classList.add('new'),i*90));
+      $$('.kw.miss',s3).forEach((el,i)=>setTimeout(()=>el.classList.add('new'),600+i*110));
+      countTo($('#nHit'),11,1000);
+      countTo($('#nMiss'),7,1000);
+      countTo($('#nScore'),62,1100);
+      io.unobserve(e.target);
+    }),{threshold:.28});
+    io.observe(s3);
+  } else { countTo($('#nHit'),11); countTo($('#nMiss'),7); countTo($('#nScore'),62); }
+
+  /* 缺口分布条生长 */
+  const barCard=$('.barrow');
+  if('IntersectionObserver' in window && barCard){
+    const io2=new IntersectionObserver(es=>es.forEach(e=>{
+      if(!e.isIntersecting) return;
+      $$('.barrow .bt i').forEach((el,i)=>setTimeout(()=>{el.style.width=el.dataset.w+'%'},i*110));
+      io2.unobserve(e.target);
+    }),{threshold:.3});
+    const bp=barCard.parentElement; if(bp) io2.observe(bp);
+  }
+
+  /* S4 改写指标的滚动播放 */
+  const s4=$('#s4');
+  if('IntersectionObserver' in window && s4){
+    const io3=new IntersectionObserver(es=>es.forEach(e=>{
+      if(!e.isIntersecting) return;
+      countTo($('#s4b'),62,1000);
+      countTo($('#s4a'),84,1200);
+      countTo($('#s4k'),7,900);
+      $$('.kw.new, .kw',s4).forEach((el,i)=>setTimeout(()=>el.classList.add('new'),i*70));
+      io3.unobserve(e.target);
+    }),{threshold:.2});
+    io3.observe(s4);
+  }
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>十套原型总览 — AI 简历润色网站</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#0C0A09;color:#FAFAF9;
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
+img,svg,iframe{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+h1,h2,h3{margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.22}
+p{margin:0 0 12px}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.muted{color:#A8A29E}
+
+/* 顶栏 */
+header{position:sticky;top:0;z-index:40;background:rgba(12,10,9,.86);backdrop-filter:blur(14px);
+  border-bottom:1px solid #292524}
+.hw{max-width:1240px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.hlogo{font-weight:800;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.hlogo i{width:9px;height:9px;border-radius:2px;background:linear-gradient(135deg,#8B5CF6,#22D3EE)}
+.hsub{font-size:12.5px;color:#78716C}
+nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+.nv{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;font-size:12.5px;color:#A8A29E;
+  transition:all .22s cubic-bezier(.4,0,.2,1)}
+.nv b{font-family:ui-monospace,monospace;font-size:11px;color:#57534E;transition:color .22s}
+.nv:hover{background:#1C1917;color:#FAFAF9}
+.nv:hover b{color:#8B5CF6}
+
+/* Hero */
+.hero{max-width:1240px;margin:0 auto;padding:74px 28px 46px}
+.hero h1{font-size:clamp(30px,5vw,50px);max-width:820px}
+.hero .lede{font-size:17px;color:#A8A29E;max-width:680px;margin:18px 0 30px}
+.hero .lede strong{color:#FAFAF9}
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1px;
+  background:#292524;border:1px solid #292524;border-radius:14px;overflow:hidden;max-width:800px}
+.hstats>div{background:#0C0A09;padding:20px}
+.hstats .n{font-family:ui-monospace,monospace;font-size:27px;font-weight:700;letter-spacing:-.03em;line-height:1;
+  background:linear-gradient(135deg,#8B5CF6,#22D3EE);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hstats .t{font-size:12px;color:#78716C;margin-top:7px}
+
+/* 差异维度表 */
+.dim{max-width:1240px;margin:0 auto;padding:0 28px 54px}
+.dim h2{font-size:20px;margin-bottom:6px}
+.dim p{font-size:14px;color:#A8A29E;margin-bottom:18px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;border:1px solid #292524;border-radius:12px;overflow:hidden}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid #1C1917;vertical-align:top}
+th{background:#171412;font-size:12px;color:#A8A29E;letter-spacing:.04em;font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{color:#78716C;white-space:nowrap;font-size:12.5px}
+td .dv{color:#FAFAF9}
+
+/* 网格 */
+main{max-width:1240px;margin:0 auto;padding:0 28px 90px;display:grid;gap:26px}
+.pcard{border:1px solid #292524;border-radius:16px;overflow:hidden;background:#121110;
+  transition:border-color .3s cubic-bezier(.4,0,.2,1)}
+.pcard:hover{border-color:#44403A}
+.phead{display:flex;align-items:center;gap:16px;padding:20px 22px 16px;flex-wrap:wrap}
+.pno{font-family:ui-monospace,monospace;font-size:13px;font-weight:700;color:#0C0A09;background:#F59E0B;
+  width:32px;height:32px;border-radius:9px;display:grid;place-content:center;flex:0 0 auto}
+.ptitle{flex:1;min-width:180px}
+.ptitle h3{font-size:18px}
+.pen{font-family:ui-monospace,monospace;font-size:11px;color:#57534E;letter-spacing:.14em;margin-top:3px}
+.pbtn{padding:8px 14px;border:1px solid #44403A;border-radius:9px;font-size:13px;color:#A8A29E;
+  transition:all .24s cubic-bezier(.4,0,.2,1);white-space:nowrap}
+.pbtn:hover{border-color:#F59E0B;color:#F59E0B;background:rgba(245,158,11,.08)}
+
+.pmeta{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;
+  background:#1C1917;border-top:1px solid #292524;border-bottom:1px solid #292524}
+.mrow{background:#121110;padding:12px 22px;display:flex;gap:12px;align-items:baseline}
+.mk{font-size:12px;color:#57534E;flex:0 0 74px}
+.mv{font-size:13.5px;color:#FAFAF9}
+.mv.mono{font-size:12.5px;color:#A8A29E;font-family:ui-monospace,monospace}
+.pal{display:flex;gap:6px;align-items:center}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+
+.pv{position:relative;height:436px;overflow:hidden;background:#FAFAF9;border-bottom:1px solid #292524}
+.pv iframe{width:100%;height:436px;border:0;pointer-events:auto}
+.pv-veil{position:absolute;left:0;right:0;bottom:0;height:56px;pointer-events:none;
+  background:linear-gradient(180deg,transparent,#121110);
+  display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px}
+.pv-veil span{font-size:11.5px;color:#57534E;font-family:ui-monospace,monospace;letter-spacing:.08em}
+
+.pjudge{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:#1C1917}
+.jcol{background:#121110;padding:18px 22px}
+.jh{font-size:12px;letter-spacing:.05em;margin-bottom:9px;font-weight:700}
+.jcol.pro .jh{color:#4ADE80}
+.jcol.con .jh{color:#F87171}
+.jcol ul{margin:0;padding-left:17px;font-size:13.5px;color:#A8A29E;line-height:1.85}
+.jcol li::marker{color:#44403A}
+
+/* 结论 */
+.concl{border:1px solid #292524;border-radius:16px;padding:26px 28px;background:#121110}
+.concl h2{font-size:20px;margin-bottom:14px}
+.concl ol{margin:0;padding-left:20px;font-size:14.5px;color:#A8A29E;line-height:2}
+.concl strong{color:#FAFAF9}
+.concl .pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:20px}
+.pickcard{border:1px solid #292524;border-radius:12px;padding:17px 19px;background:#171412}
+.pickcard .tagd{font-size:11.5px;font-family:ui-monospace,monospace;letter-spacing:.1em;color:#8B5CF6;margin-bottom:7px}
+.pickcard strong{display:block;font-size:15px;margin-bottom:6px;color:#FAFAF9}
+.pickcard p{font-size:13px;color:#A8A29E;margin:0}
+
+footer{border-top:1px solid #292524;padding:34px 28px;text-align:center;font-size:12.5px;color:#57534E}
+
+@media (max-width:700px){
+  .hw{padding:12px 18px} nav{display:none}
+  .hero,.dim,main{padding-left:18px;padding-right:18px}
+  .pv,.pv iframe{height:320px}
+  .pjudge{grid-template-columns:1fr}
+}
+/* 兜底：防横向溢出 */
+html,body{overflow-x:hidden;max-width:100%}
+img,svg,iframe,video{max-width:100%}
+pre,code{overflow-wrap:anywhere}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hw">
+    <div class="hlogo"><i></i> AI 简历润色 · 原型方案库</div>
+    <span class="hsub">10 套互斥骨架 · 全部可交互</span>
+    <nav><a class="nv" href="#p11"><b>11</b><span>海报首页</span></a><a class="nv" href="#p01"><b>01</b><span>极简白</span></a><a class="nv" href="#p02"><b>02</b><span>暗黑实验室</span></a><a class="nv" href="#p03"><b>03</b><span>杂志排版</span></a><a class="nv" href="#p04"><b>04</b><span>左侧栏工作台</span></a><a class="nv" href="#p05"><b>05</b><span>关卡地图</span></a><a class="nv" href="#p06"><b>06</b><span>对话流</span></a><a class="nv" href="#p07"><b>07</b><span>Bento</span></a><a class="nv" href="#p08"><b>08</b><span>数据仪表盘</span></a><a class="nv" href="#p09"><b>09</b><span>分屏对照</span></a><a class="nv" href="#p10"><b>10</b><span>时间轴纵向</span></a></nav>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>同一套功能，十种完全不同的做法。</h1>
+  <p class="lede">
+    十套原型共享同一套业务流程与交互引擎（上传 → 核对 → 诊断 → JD 匹配 → 改写 → 付费 → 导出），
+    但在<strong>布局骨架、视觉语言、导航结构、叙事顺序</strong>四个维度上互不重复。<br>
+    每一套都是单文件 HTML，纯原生 CSS/JS，无外部依赖，双击即可打开。
+  </p>
+  <div class="hstats">
+    <div><div class="n">10</div><div class="t">套互斥骨架</div></div>
+    <div><div class="n">7</div><div class="t">个功能区块 / 套</div></div>
+    <div><div class="n">0</div><div class="t">外部依赖 · 单文件</div></div>
+    <div><div class="n">20/20</div><div class="t">桌面+移动端冒烟测试通过</div></div>
+  </div>
+</section>
+
+<section class="dim">
+  <h2>四个差异维度是怎么错开的</h2>
+  <p>避免"换个皮肤"的假多样：每套至少在一个维度上与其余九套结构性不同。</p>
+  <table>
+    <thead><tr><th>维度</th><th>覆盖情况</th></tr></thead>
+    <tbody>
+      <tr><td>布局骨架</td><td class="dv">单列纵向 / 悬浮层 / 双栏文字流 / 左栏+右滚 / 关卡地图 / 聊天流 / 12 列拼贴 / 指标栅格 / 左右分屏 / 中央竖轴 —— 十套零重复</td></tr>
+      <tr><td>导航结构</td><td class="dv">顶部进度条（01/02/03/05/06/07/08）、左侧常驻侧栏（04）、分段柄（09）、中轴轨道（10）</td></tr>
+      <tr><td>叙事顺序</td><td class="dv">结果前置（01/08）、过程前置（05/10）、随时可跳（04/09）、线性推进（06）</td></tr>
+      <tr><td>操作反馈</td><td class="dv">数字滚动 / 环形生长 / 骨架屏 / 打字机 / 关卡点亮 / 中轴填充 / 分割拖拽 / 彩带落屑 / Toast / 抖动</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<main>
+
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">11</div>
+      <div class="ptitle">
+        <h3>海报首页 Hero Poster</h3>
+        <div class="pen">HERO POSTER</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="11-hero.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">大卡片海报墙 · 7/5 + 5-4-3 阶梯</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#08080B;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#6366F1;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线 16px / r=20</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">核心优势即视觉主体 · 滚动逐级入场</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="11-hero.html" loading="lazy" title="海报首页 Hero Poster 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>首屏即完成"差异化是什么"的说服，不靠文案堆砌</li><li>五张海报对应一条完整转化链：免费→匹配→缺口→复用→隐私</li><li>氛围光球 + 逐级入场 + 数字滚动，动效密度最高</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>页面短（2400px），深度内容需另开二级页</li><li>动效多，低端安卓机需注意降级</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">01</div>
+      <div class="ptitle">
+        <h3>极简白 Minimal Pro</h3>
+        <div class="pen">MINIMAL PRO</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="01-minimal-pro.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">全宽单列 · 超宽留白</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#FFFFFF;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#2563EB;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线 16px / r=8</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">分数即焦点 · 单列纵向叙事</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="01-minimal-pro.html" loading="lazy" title="极简白 Minimal Pro 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>认知负荷最低，任何人都看得懂</li><li>分数环是天然视觉锚点</li><li>实现最简单，1 天可完成</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>缺差异化，像"又一个工具站"</li><li>纯静态，留存激励弱</li><li>首屏信息密度低</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">02</div>
+      <div class="ptitle">
+        <h3>暗黑实验室 Dark Lab</h3>
+        <div class="pen">DARK LAB</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="02-dark-lab.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">悬浮 HUD · 霓虹发光</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#0A0E1A;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#00E5FF;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线 15px / r=10</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">实时状态条 · 四角括号 · 扫描线</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="02-dark-lab.html" loading="lazy" title="暗黑实验室 Dark Lab 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>科技感强，"AI 在算"的感知最足</li><li>悬浮 HUD 持续反馈成本</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>暗色对中年求职者不友好</li><li>长时间阅读疲劳</li><li>打印/截图投递场景违和</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">03</div>
+      <div class="ptitle">
+        <h3>杂志排版 Editorial</h3>
+        <div class="pen">EDITORIAL</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="03-editorial.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">宋体衬线 · 首字下沉</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#FFFFFF;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#B91C1C;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">宋体衬线 17px / r=0</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">罗马数字章节 · 下划线输入框</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="03-editorial.html" loading="lazy" title="杂志排版 Editorial 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>"专业文档"气质，建立信任快</li><li>和"简历"这个物件的调性最契合</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>移动端宋体渲染不稳</li><li>表单元素朴素，操作反馈弱</li><li>年轻用户觉得老气</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">04</div>
+      <div class="ptitle">
+        <h3>左侧栏工作台 Workbench</h3>
+        <div class="pen">WORKBENCH</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="04-workbench.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">左固定侧栏 + 右滚动</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#F8FAFC;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#0F172A;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线 15px / r=8</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">7 步导航常驻 · 进度可见</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="04-workbench.html" loading="lazy" title="左侧栏工作台 Workbench 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>"我做到哪了"永远可见，长流程最不易迷路</li><li>天然适合多岗位版本管理</li><li>侧栏可扩展成历史记录</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>移动端要整体降级为底栏</li><li>占用横向空间，内容区变窄</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">05</div>
+      <div class="ptitle">
+        <h3>关卡地图 Quest</h3>
+        <div class="pen">QUEST</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="05-quest.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">游戏化 · XP 成长</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#1E1B4B;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#FBBF24;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线 15.5px / r=14</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">等级圆章 · 星星 · 立体按钮</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="05-quest.html" loading="lazy" title="关卡地图 Quest 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>完成感最强，最能推动走完全程</li><li>对 00 后应届生吸引力明显</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>和"求职严肃场景"有调性冲突</li><li>可能被 HR 视角视为不专业</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">06</div>
+      <div class="ptitle">
+        <h3>对话流 Chat</h3>
+        <div class="pen">CHAT</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="06-chat.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">聊天流 · 气泡推进</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#FFFFFF;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#10A37F;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线 15.5px / r=18</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">AI 头像 · 打字机光标</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="06-chat.html" loading="lazy" title="对话流 Chat 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>交互范式已被 ChatGPT 教育，零学习成本</li><li>"AI 顾问陪你改"的心理暗示强</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>长文本在气泡里可读性差</li><li>不易并排对比多岗位</li><li>不适合展示结构化报告</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">07</div>
+      <div class="ptitle">
+        <h3>Bento 拼贴 Bento</h3>
+        <div class="pen">BENTO</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="07-bento.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">12 列栅格拼贴</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#0B0B0F;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#8B5CF6;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线 15px / r=16</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">异形卡片 · 玻璃拟态</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="07-bento.html" loading="lazy" title="Bento 拼贴 Bento 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>视觉最新，截图传播性好</li><li>信息密度高，一屏放得下全部结论</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>栅格排布维护成本高</li><li>移动端退化严重</li><li>信息层级容易失焦</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">08</div>
+      <div class="ptitle">
+        <h3>数据仪表盘 Dashboard</h3>
+        <div class="pen">DASHBOARD</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="08-dashboard.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">指标条 · 环形分数</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#0F172A;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#38BDF8;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线 13.5px / r=6</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">KPI 指标条 · 网格背景</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="08-dashboard.html" loading="lazy" title="数据仪表盘 Dashboard 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>"简历是数据问题"的框架最清晰</li><li>指标条利于横向比较多个版本</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>信息密度大，非数据岗会觉得杂</li><li>字号小，中年用户吃力</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">09</div>
+      <div class="ptitle">
+        <h3>分屏对照 Split</h3>
+        <div class="pen">SPLIT</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="09-split.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">左右 50/50 · 可拖分割柄</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#FAFAF9;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#E0F2FE;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线 15px / r=4</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">逐行 diff 高亮 · 缺口定位</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="09-split.html" loading="lazy" title="分屏对照 Split 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>把"差在哪"做到最直观，是核心差异化的最佳载体</li><li>拖动交互有探索感，停留时长高</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>移动端必须堆叠，失去对照意义</li><li>首屏看不到分数，冲击力弱于 01</li></ul></div>
+    </div>
+  </article>
+  <article class="pcard">
+    <div class="phead">
+      <div class="pno">10</div>
+      <div class="ptitle">
+        <h3>时间轴纵向 Timeline</h3>
+        <div class="pen">TIMELINE</div>
+      </div>
+      <div class="pbtns">
+        <a class="pbtn" href="10-timeline.html" target="_blank">全屏打开 ↗</a>
+      </div>
+    </div>
+
+    <div class="pmeta">
+      <div class="mrow"><span class="mk">布局骨架</span><span class="mv">中央竖轴 · 左右交替</span></div>
+      <div class="mrow"><span class="mk">配色</span><span class="mv pal"><span class="sw" style="background:#1C1917;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span class="sw" style="background:#F59E0B;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span></span></div>
+      <div class="mrow"><span class="mk">字体 / 圆角</span><span class="mv mono">无衬线+衬线标题 / r=12</span></div>
+      <div class="mrow"><span class="mk">记忆点</span><span class="mv">中轴进度填充 · 节点逐个点亮</span></div>
+    </div>
+
+    <div class="pv">
+      <iframe src="10-timeline.html" loading="lazy" title="时间轴纵向 Timeline 预览" scrolling="no"></iframe>
+      <div class="pv-veil"><span>实时预览 · 可滚动</span></div>
+    </div>
+
+    <div class="pjudge">
+      <div class="jcol pro"><div class="jh">优势</div><ul><li>"整条流程还剩几步"感知最强，最利留存</li><li>滚动推进带来持续参与感</li></ul></div>
+      <div class="jcol con"><div class="jh">代价</div><ul><li>页面长，跳转节点要额外导航</li><li>左右交替在窄屏失效</li></ul></div>
+    </div>
+  </article>
+
+  <section class="concl">
+    <h2>怎么选</h2>
+    <p class="muted" style="font-size:14.5px;margin-bottom:0">
+      这不是"挑一个最好看的"。十套是十种<strong style="color:#FAFAF9">产品假设</strong>的具象化，
+      真正要验证的是：用户走完整个流程的意愿，来自哪个环节的什么感受。
+    </p>
+    <div class="pick">
+      <div class="pickcard">
+        <div class="tagd">保守方案</div>
+        <strong>01 极简白 + 09 分屏对照</strong>
+        <p>01 承担"第一眼看得懂"，09 承担"核心差异化看得见"。两者拼装成一个完整站点的两个区段。</p>
+      </div>
+      <div class="pickcard">
+        <div class="tagd">留存优先</div>
+        <strong>04 工作台 + 10 时间轴</strong>
+        <p>04 解决"我做到哪了"，10 解决"还剩几步"。适合把"多岗位海投"做成主要使用场景。</p>
+      </div>
+      <div class="pickcard">
+        <div class="tagd">差异化优先</div>
+        <strong>09 分屏对照</strong>
+        <p>"左右对照 + 拖动分割柄"是最难被抄、也最能直接证明"JD 定向匹配"价值的交互形态。</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  十套原型 · 数据均为演示态，不含真实 AI 调用与真实支付<br>
+  每套均为单文件 HTML（原生 CSS/JS，零外部依赖），可用于用户测试与内部评审
+</footer>
+
+</body>
+</html>
