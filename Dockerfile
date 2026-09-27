@@ -5,7 +5,7 @@
 # ============================================================
 
 # ---------- Stage 1：整理静态产物 ----------
-FROM alpine:3.20 AS builder
+FROM docker.1ms.run/library/alpine:3.20 AS builder
 
 WORKDIR /build
 
@@ -55,7 +55,7 @@ RUN mkdir -p /build/out && \
     echo "构建完成，HTML 文件数：$(cat /build/out/.htmlcount)"
 
 # ---------- Stage 2：nginx 运行时 ----------
-FROM nginx:1.27-alpine AS runtime
+FROM docker.1ms.run/library/nginx:1.27-alpine AS runtime
 
 # 站点配置
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
