@@ -72,6 +72,22 @@ docker compose down
 | `/lp/` | 落地页原型总览（20 套，含实时缩略图） |
 | `/prototypes/` | 功能页原型总览（11 套） |
 
+### 镜像源加速（按需，由构建机配置）
+
+Dockerfile 中的基础镜像（`alpine:3.20`、`nginx:1.27-alpine`）使用**规范的上游地址**，镜像源的解析交给构建环境，不写死在 Dockerfile 里。这样仓库在任何机器、任何 CI 上都可移植，且镜像来源元数据保持为规范的 Docker Hub 地址。
+
+国内网络拉取慢时，在**构建机**上配置镜像加速即可，例如 `~/.docker/daemon.json`：
+
+```json
+{
+  "registry-mirrors": ["https://docker.1ms.run"]
+}
+```
+
+改完重启 Docker 生效。daemon 级配置带有回退能力——镜像源不可用时自动回落 Docker Hub；而写死在 `FROM` 里的前缀没有回退，源一旦失效所有构建都会失败。
+
+> 供应链加固（可选）：生产环境可将基础镜像改为 `alpine:3.20@sha256:<digest>` 固定 digest。digest 是内容寻址的，无论经由哪个镜像源都能校验内容一致，可复现性更好；代价是升级基础镜像时需手动更新 digest。
+
 ### 不用 Docker 也能看
 
 所有页面均为纯静态，直接打开或用任意静态服务器：
