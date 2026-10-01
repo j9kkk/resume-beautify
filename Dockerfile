@@ -12,10 +12,12 @@ WORKDIR /build
 # 拷贝全部静态资源（保持目录结构）
 COPY src/ ./src/
 
-# 整理产物：仅保留落地页，lp/00-index.html 即站点根页面
+# 整理产物：仅保留落地页，lp/ 的内容平铺为站点根（总览页即 index.html，
+# 内页与总览页同级，页面内相对链接 href="01-*.html" 才能命中）
 RUN mkdir -p /build/out && \
-    cp -r /build/src/lp /build/out/lp && \
+    cp /build/src/lp/*.html /build/out/ && \
     cp /build/src/lp/00-index.html /build/out/index.html && \
+    rm -f /build/out/00-index.html && \
     { \
       echo '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">'; \
       echo '<title>404 · 页面不存在</title>'; \

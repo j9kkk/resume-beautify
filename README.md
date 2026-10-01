@@ -68,7 +68,7 @@ docker compose down
 | 路径 | 内容 |
 |---|---|
 | `/` | 落地页原型总览（`lp/00-index.html`，即默认页） |
-| `/lp/` | 同上（目录内直达） |
+| `/01-glass-prism.html` 等 | 各套落地页（`lp/` 内容平铺在根路径） |
 
 ### 镜像源加速（按需，由构建机配置）
 
@@ -109,8 +109,8 @@ resume-beautify/
 ├── docker/
 │   └── nginx.conf          nginx 站点配置（缓存、gzip、安全头）
 ├── src/
-│   └── lp/                 落地页原型 20 套 + 总览页
-│       ├── 00-index.html   总览（构建时复制为站点默认页）
+│   └── lp/                 落地页原型 20 套 + 总览页（构建时平铺为站点根）
+│       ├── 00-index.html   总览（即站点默认页）
 │       └── 01~20-*.html    各套原型
 ├── docs/                   需求与产品文档
 └── README.md
