@@ -12,35 +12,10 @@ WORKDIR /build
 # 拷贝全部静态资源（保持目录结构）
 COPY src/ ./src/
 
-# 生成根导航页：把两套原型库索引到一起
+# 整理产物：仅保留落地页，lp/00-index.html 即站点根页面
 RUN mkdir -p /build/out && \
-    cp -r /build/src/lp          /build/out/lp && \
-    cp -r /build/src/prototypes  /build/out/prototypes && \
-    { \
-      echo '<!DOCTYPE html>'; \
-      echo '<html lang="zh-CN"><head><meta charset="utf-8">'; \
-      echo '<meta name="viewport" content="width=device-width,initial-scale=1">'; \
-      echo '<title>简历罗盘 · 原型站点</title>'; \
-      echo '<style>'; \
-      echo '*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-content:center;'; \
-      echo 'background:#08080B;color:#EDEDF2;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;padding:40px 22px}'; \
-      echo '.box{max-width:720px;text-align:center}'; \
-      echo 'h1{margin:0 0 14px;font-size:clamp(28px,5vw,44px);font-weight:800;letter-spacing:-.03em}'; \
-      echo 'p{margin:0 auto 38px;max-width:520px;color:#9CA3AF;line-height:1.75;font-size:15px}'; \
-      echo '.links{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}'; \
-      echo 'a{display:block;padding:26px 24px;border:1px solid rgba(255,255,255,.1);border-radius:16px;'; \
-      echo 'text-decoration:none;color:inherit;background:rgba(255,255,255,.035);transition:.4s cubic-bezier(.16,1,.3,1)}'; \
-      echo 'a:hover{transform:translateY(-5px);border-color:rgba(129,140,248,.55);background:rgba(129,140,248,.09)}'; \
-      echo 'b{display:block;font-size:17px;font-weight:720;margin-bottom:7px}'; \
-      echo 'span{font-size:13px;color:#8B8B96;line-height:1.6}'; \
-      echo '</style></head><body><div class="box">'; \
-      echo '<h1>简历罗盘 · 原型站点</h1>'; \
-      echo '<p>AI 简历润色网站的设计原型集合。全部为纯静态 HTML，点击任意入口即可浏览。</p>'; \
-      echo '<div class="links">'; \
-      echo '<a href="/lp/"><b>落地页原型 · 20 套</b><span>视差海报落地页，含首屏海报 + 特性带 + 收尾行动</span></a>'; \
-      echo '<a href="/prototypes/"><b>功能页原型 · 11 套</b><span>覆盖诊断、匹配、改写、支付等完整流程</span></a>'; \
-      echo '</div></div></body></html>'; \
-    } > /build/out/index.html && \
+    cp -r /build/src/lp /build/out/lp && \
+    cp /build/src/lp/00-index.html /build/out/index.html && \
     { \
       echo '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">'; \
       echo '<title>404 · 页面不存在</title>'; \
